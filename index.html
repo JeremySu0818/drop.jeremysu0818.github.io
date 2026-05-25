@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>PicDrop</title>
+    <link rel="preconnect" href="https://esm.sh" />
+    <link rel="stylesheet" href="https://esm.sh/solid-glass@0.0.3/css" />
+    <link rel="stylesheet" href="./static/css/style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="brand-strip" aria-label="PicDrop">
+        <div>
+          <p class="eyebrow">PicDrop</p>
+          <h1>加密圖片傳輸🥵</h1>
+        </div>
+        <div class="status-pill" id="serverStatus">API 未連線</div>
+      </section>
+
+      <section class="workspace">
+        <article class="glass-card upload-card" data-liquid-glass>
+          <div class="card-head">
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path
+                  d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"
+                />
+              </svg>
+            </span>
+            <div>
+              <h2>Upload photo</h2>
+              <p>有效 30 分鐘，一次下載後銷毀。</p>
+            </div>
+          </div>
+
+          <label class="drop-zone" id="dropZone">
+            <input id="photoInput" type="file" accept="image/*" />
+            <span class="drop-title">選擇圖片</span>
+            <span class="drop-meta" id="fileMeta">PNG、JPG、WebP、GIF</span>
+          </label>
+
+          <button class="primary-action" id="uploadButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v12m0-12 4.5 4.5M12 3 7.5 7.5M5 14v5h14v-5" />
+            </svg>
+            加密並上傳
+          </button>
+
+          <div class="code-panel" id="codePanel" hidden>
+            <label for="shareCode">代碼</label>
+            <div class="code-row">
+              <input id="shareCode" readonly />
+              <button
+                class="icon-button"
+                id="copyButton"
+                type="button"
+                title="複製代碼"
+                aria-label="複製代碼"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 8h10v12H8z" />
+                  <path
+                    d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article class="glass-card receive-card" data-liquid-glass>
+          <div class="card-head">
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M12 4v12m0 0 4.5-4.5M12 16l-4.5-4.5M5 20h14" />
+              </svg>
+            </span>
+            <div>
+              <h2>輸入代碼</h2>
+              <p>解密在瀏覽器本機完成。</p>
+            </div>
+          </div>
+
+          <label class="field-label" for="downloadCode">SHA-256 代碼</label>
+          <textarea
+            id="downloadCode"
+            spellcheck="false"
+            placeholder="SHA-256:"
+          ></textarea>
+
+          <button class="primary-action" id="downloadButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
+            </svg>
+            下載圖片
+          </button>
+        </article>
+      </section>
+
+      <section class="glass-card settings-card" data-liquid-glass>
+        <label class="field-label" for="serverUrl">Server URL</label>
+        <div class="settings-row">
+          <input
+            id="serverUrl"
+            type="url"
+            placeholder="https://your-service.onrender.com"
+          />
+          <button class="secondary-action" id="saveServerUrl" type="button">
+            儲存
+          </button>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <script type="module" src="./static/js/app.js"></script>
+  </body>
+</html>
