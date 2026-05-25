@@ -288,6 +288,12 @@ textarea {
   resize: vertical;
 }
 
+#shareCode {
+  min-height: 118px;
+  margin-bottom: 0;
+  white-space: pre-wrap;
+}
+
 input:focus,
 textarea:focus {
   border-color: rgba(247, 248, 251, 0.78);

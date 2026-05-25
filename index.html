@@ -36,7 +36,7 @@
           </div>
 
           <label class="drop-zone" id="dropZone">
-            <input id="photoInput" type="file" accept="image/*" />
+            <input id="photoInput" type="file" accept="image/*" multiple />
             <span class="drop-title">選擇圖片</span>
             <span class="drop-meta" id="fileMeta">PNG、JPG、WebP、GIF</span>
           </label>
@@ -51,13 +51,13 @@
           <div class="code-panel" id="codePanel" hidden>
             <label for="shareCode">代碼</label>
             <div class="code-row">
-              <input id="shareCode" readonly />
+              <textarea id="shareCode" readonly></textarea>
               <button
                 class="icon-button"
                 id="copyButton"
                 type="button"
-                title="複製代碼"
-                aria-label="複製代碼"
+                title="複製全部代碼"
+                aria-label="複製全部代碼"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M8 8h10v12H8z" />

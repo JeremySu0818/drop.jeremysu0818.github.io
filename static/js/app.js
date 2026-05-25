@@ -20,7 +20,7 @@ const els = {
   toast: document.querySelector("#toast"),
 };
 
-let selectedFile = null;
+let selectedFiles = [];
 let toastTimer = 0;
 
 function getServerUrl() {
@@ -96,12 +96,13 @@ async function decryptBytes(key, ivBase64, ciphertextBase64) {
   return new Uint8Array(decrypted);
 }
 
-function normalizeCode(value) {
-  const code = value.trim();
-  if (!/^SHA-256:[A-Za-z0-9_-]{43}$/.test(code)) {
+function extractCodes(value) {
+  const codes = value.match(/SHA-256:[A-Za-z0-9_-]{43}/g) || [];
+  const uniqueCodes = [...new Set(codes)];
+  if (uniqueCodes.length === 0) {
     throw new Error("代碼格式不正確。");
   }
-  return code;
+  return uniqueCodes;
 }
 
 async function lookupHashFromCode(code) {
@@ -124,6 +125,23 @@ function formatBytes(size) {
   return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
+function setSelectedFiles(files) {
+  selectedFiles = files.filter((file) => file.type.startsWith("image/"));
+  if (selectedFiles.length === 0) {
+    els.fileMeta.textContent = "PNG、JPG、WebP、GIF";
+    return;
+  }
+
+  const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+  if (selectedFiles.length === 1) {
+    const [file] = selectedFiles;
+    els.fileMeta.textContent = `${file.name} · ${formatBytes(file.size)}`;
+    return;
+  }
+
+  els.fileMeta.textContent = `${selectedFiles.length} 張圖片 · ${formatBytes(totalSize)}`;
+}
+
 async function api(path, options = {}) {
   const response = await fetch(`${getServerUrl()}${path}`, {
     ...options,
@@ -140,44 +158,51 @@ async function api(path, options = {}) {
 }
 
 async function uploadPhoto() {
-  if (!selectedFile) {
+  if (selectedFiles.length === 0) {
     showToast("請先選擇圖片。");
     return;
   }
 
   setBusy(els.uploadButton, true);
   try {
-    const code = await createShareCode();
-    const key = await keyFromCode(code);
-    const lookupHash = await lookupHashFromCode(code);
-    const fileBytes = new Uint8Array(await selectedFile.arrayBuffer());
-    const metaBytes = textBytes(
-      JSON.stringify({
-        name: selectedFile.name || "picdrop-image",
-        mime: selectedFile.type || "application/octet-stream",
-        size: selectedFile.size,
-      }),
-    );
+    const uploaded = [];
+    els.codePanel.hidden = true;
+    els.shareCode.value = "";
+    for (const selectedFile of selectedFiles) {
+      const code = await createShareCode();
+      const key = await keyFromCode(code);
+      const lookupHash = await lookupHashFromCode(code);
+      const fileBytes = new Uint8Array(await selectedFile.arrayBuffer());
+      const metaBytes = textBytes(
+        JSON.stringify({
+          name: selectedFile.name || "picdrop-image",
+          mime: selectedFile.type || "application/octet-stream",
+          size: selectedFile.size,
+        }),
+      );
 
-    const [fileBox, metaBox] = await Promise.all([
-      encryptBytes(key, fileBytes),
-      encryptBytes(key, metaBytes),
-    ]);
+      const [fileBox, metaBox] = await Promise.all([
+        encryptBytes(key, fileBytes),
+        encryptBytes(key, metaBytes),
+      ]);
 
-    await api("/api/uploads", {
-      method: "POST",
-      body: JSON.stringify({
-        lookupHash,
-        fileIv: fileBox.iv,
-        fileCiphertext: fileBox.ciphertext,
-        metaIv: metaBox.iv,
-        metaCiphertext: metaBox.ciphertext,
-      }),
-    });
+      await api("/api/uploads", {
+        method: "POST",
+        body: JSON.stringify({
+          lookupHash,
+          fileIv: fileBox.iv,
+          fileCiphertext: fileBox.ciphertext,
+          metaIv: metaBox.iv,
+          metaCiphertext: metaBox.ciphertext,
+        }),
+      });
 
-    els.shareCode.value = code;
+      uploaded.push({ name: selectedFile.name || "picdrop-image", code });
+    }
+
+    els.shareCode.value = uploaded.map((item) => `${item.name}\n${item.code}`).join("\n\n");
     els.codePanel.hidden = false;
-    showToast(`已加密上傳，有效 ${TTL_MINUTES} 分鐘。`);
+    showToast(`已加密上傳 ${uploaded.length} 張，有效 ${TTL_MINUTES} 分鐘。`);
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -188,28 +213,34 @@ async function uploadPhoto() {
 async function downloadPhoto() {
   setBusy(els.downloadButton, true);
   try {
-    const code = normalizeCode(els.downloadCode.value);
-    const key = await keyFromCode(code);
-    const lookupHash = await lookupHashFromCode(code);
-    const payload = await api("/api/download", {
-      method: "POST",
-      body: JSON.stringify({ lookupHash }),
-    });
+    const codes = extractCodes(els.downloadCode.value);
+    let downloaded = 0;
 
-    const metaBytes = await decryptBytes(key, payload.metaIv, payload.metaCiphertext);
-    const meta = JSON.parse(new TextDecoder().decode(metaBytes));
-    const fileBytes = await decryptBytes(key, payload.fileIv, payload.fileCiphertext);
-    const blob = new Blob([fileBytes], { type: meta.mime || "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = meta.name || "picdrop-image";
-    document.body.append(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    for (const code of codes) {
+      const key = await keyFromCode(code);
+      const lookupHash = await lookupHashFromCode(code);
+      const payload = await api("/api/download", {
+        method: "POST",
+        body: JSON.stringify({ lookupHash }),
+      });
+
+      const metaBytes = await decryptBytes(key, payload.metaIv, payload.metaCiphertext);
+      const meta = JSON.parse(new TextDecoder().decode(metaBytes));
+      const fileBytes = await decryptBytes(key, payload.fileIv, payload.fileCiphertext);
+      const blob = new Blob([fileBytes], { type: meta.mime || "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = meta.name || "picdrop-image";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      downloaded += 1;
+    }
+
     els.downloadCode.value = "";
-    showToast("圖片已下載，伺服器端資料已銷毀。");
+    showToast(`已下載 ${downloaded} 張，伺服器端資料已銷毀。`);
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -219,10 +250,7 @@ async function downloadPhoto() {
 
 function bindDropZone() {
   els.photoInput.addEventListener("change", () => {
-    selectedFile = els.photoInput.files?.[0] || null;
-    els.fileMeta.textContent = selectedFile
-      ? `${selectedFile.name} · ${formatBytes(selectedFile.size)}`
-      : "PNG、JPG、WebP、GIF";
+    setSelectedFiles([...els.photoInput.files]);
   });
 
   for (const eventName of ["dragenter", "dragover"]) {
@@ -240,13 +268,12 @@ function bindDropZone() {
   }
 
   els.dropZone.addEventListener("drop", (event) => {
-    const file = [...event.dataTransfer.files].find((item) => item.type.startsWith("image/"));
-    if (!file) {
+    const files = [...event.dataTransfer.files].filter((item) => item.type.startsWith("image/"));
+    if (files.length === 0) {
       showToast("請拖曳圖片檔。");
       return;
     }
-    selectedFile = file;
-    els.fileMeta.textContent = `${file.name} · ${formatBytes(file.size)}`;
+    setSelectedFiles(files);
   });
 }
 
