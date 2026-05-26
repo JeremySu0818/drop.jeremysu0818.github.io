@@ -1,9 +1,9 @@
 export function bytesToBase64(bytes) {
-  let binary = '';
+  const chunks = [];
   for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    chunks.push(String.fromCharCode(...bytes.subarray(i, i + 0x8000)));
   }
-  return btoa(binary);
+  return btoa(chunks.join(''));
 }
 
 export function base64ToBytes(base64) {

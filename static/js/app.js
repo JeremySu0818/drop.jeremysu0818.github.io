@@ -18,6 +18,8 @@ import {
 import { initPageEffects } from './modules/ui-effects.js';
 
 const TTL_MINUTES = 30;
+const MAX_PARALLEL_UPLOADS = 3;
+const PROGRESS_RENDER_INTERVAL_MS = 120;
 const SERVER_URL = 'https://picdrop-server.jeremytw.qzz.io';
 
 const els = {
@@ -114,6 +116,57 @@ function uploadJsonWithProgress(path, payload, onProgress) {
   });
 }
 
+function getUploadConcurrency(fileCount) {
+  const connection = navigator.connection;
+  if (
+    connection?.saveData ||
+    ['slow-2g', '2g'].includes(connection?.effectiveType)
+  ) {
+    return 1;
+  }
+
+  return Math.max(1, Math.min(MAX_PARALLEL_UPLOADS, fileCount));
+}
+
+async function eachWithConcurrency(items, concurrency, worker) {
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (nextIndex < items.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        await worker(items[currentIndex], currentIndex);
+      }
+    },
+  );
+
+  await Promise.all(workers);
+}
+
+async function createEncryptedFile(file, key) {
+  const fileBytes = new Uint8Array(await file.arrayBuffer());
+  const metaBytes = textBytes(
+    JSON.stringify({
+      name: file.name || 'picdrop-image',
+      mime: file.type || 'application/octet-stream',
+      size: file.size,
+    }),
+  );
+
+  const [fileBox, metaBox] = await Promise.all([
+    encryptBytes(key, fileBytes),
+    encryptBytes(key, metaBytes),
+  ]);
+
+  return {
+    fileIv: fileBox.iv,
+    fileCiphertext: fileBox.ciphertext,
+    metaIv: metaBox.iv,
+    metaCiphertext: metaBox.ciphertext,
+  };
+}
+
 async function uploadPhoto() {
   if (selectedFiles.length === 0) {
     showToast('Please select image files first.');
@@ -123,39 +176,50 @@ async function uploadPhoto() {
   setBusy(els.uploadButton, true);
   try {
     els.shareCode.value = '';
+    const filesToUpload = selectedFiles.slice();
     const code = await createShareCode();
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
-    const totalFiles = selectedFiles.length;
-    showToast(`Uploading 0/${totalFiles}`, { persist: true });
-
+    const totalFiles = filesToUpload.length;
+    const concurrency = getUploadConcurrency(totalFiles);
+    const uploadProgress = Array(totalFiles).fill(0);
+    let encryptedFiles = 0;
     let uploadedFiles = 0;
     let lastProgressAt = 0;
 
-    for (let i = 0; i < selectedFiles.length; i += 1) {
-      const selectedFile = selectedFiles[i];
-      showToast(`Encrypting ${i + 1}/${totalFiles}`, { persist: true });
+    const renderProgress = (force = false) => {
+      const currentTime = Date.now();
+      if (!force && currentTime - lastProgressAt < PROGRESS_RENDER_INTERVAL_MS) {
+        return;
+      }
 
-      const fileBytes = new Uint8Array(await selectedFile.arrayBuffer());
-      const metaBytes = textBytes(
-        JSON.stringify({
-          name: selectedFile.name || 'picdrop-image',
-          mime: selectedFile.type || 'application/octet-stream',
-          size: selectedFile.size,
-        }),
+      lastProgressAt = currentTime;
+      const activeProgress = uploadProgress.reduce(
+        (sum, percent) => sum + percent / 100,
+        0,
+      );
+      const overallPercent = Math.min(
+        100,
+        Math.round(((uploadedFiles + activeProgress) / totalFiles) * 100),
       );
 
-      const [fileBox, metaBox] = await Promise.all([
-        encryptBytes(key, fileBytes),
-        encryptBytes(key, metaBytes),
-      ]);
+      showToast(
+        `Uploading ${uploadedFiles}/${totalFiles} (${overallPercent}%)`,
+        { persist: true },
+      );
+    };
 
-      const encryptedFile = {
-        fileIv: fileBox.iv,
-        fileCiphertext: fileBox.ciphertext,
-        metaIv: metaBox.iv,
-        metaCiphertext: metaBox.ciphertext,
-      };
+    showToast(
+      concurrency > 1
+        ? `Encrypting and uploading with ${concurrency} parallel uploads`
+        : `Uploading 0/${totalFiles}`,
+      { persist: true },
+    );
+
+    await eachWithConcurrency(filesToUpload, concurrency, async (file, index) => {
+      const encryptedFile = await createEncryptedFile(file, key);
+      encryptedFiles += 1;
+      showToast(`Encrypted ${encryptedFiles}/${totalFiles}`, { persist: true });
 
       await uploadJsonWithProgress(
         '/api/uploads',
@@ -167,38 +231,20 @@ async function uploadPhoto() {
           const percent = event.total
             ? Math.min(100, Math.round((event.loaded / event.total) * 100))
             : 0;
-          const currentTime = Date.now();
-          const shouldRender =
-            percent === 100 || currentTime - lastProgressAt >= 120;
-
-          if (!shouldRender) {
-            return;
-          }
-
-          lastProgressAt = currentTime;
-          const inProgressCount = Math.min(uploadedFiles + 1, totalFiles);
-          const overallPercent = Math.min(
-            100,
-            Math.round(((uploadedFiles + percent / 100) / totalFiles) * 100),
-          );
-
-          showToast(
-            `Uploading ${inProgressCount}/${totalFiles} (${overallPercent}%)`,
-            {
-              persist: true,
-            },
-          );
+          uploadProgress[index] = percent;
+          renderProgress(percent === 100);
         },
       );
 
       uploadedFiles += 1;
-      showToast(`Uploading ${uploadedFiles}/${totalFiles}`, { persist: true });
-    }
+      uploadProgress[index] = 0;
+      renderProgress(true);
+    });
 
     els.shareCode.value = code;
     els.codeModal.showModal();
     showToast(
-      `Successfully encrypted and uploaded ${selectedFiles.length} image(s). Valid for ${TTL_MINUTES} minutes.`,
+      `Successfully encrypted and uploaded ${filesToUpload.length} image(s). Valid for ${TTL_MINUTES} minutes.`,
     );
   } catch (error) {
     showToast(error.message);
