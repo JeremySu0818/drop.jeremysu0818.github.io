@@ -96,10 +96,13 @@ function extractCodes(value) {
   if (uniqueCodes.length === 0) {
     throw new Error("代碼格式不正確。");
   }
+  if (uniqueCodes.length > 1) {
+    throw new Error("目前一次下載只支援一組 SHA-256 代碼。");
+  }
   return uniqueCodes;
 }
 
-async function lookupHashFromCode(code) {
+async function lookupKeyFromCode(code) {
   return bytesToHex(await sha256Bytes(`lookup:${code}`));
 }
 
@@ -191,13 +194,14 @@ async function uploadPhoto() {
 
   setBusy(els.uploadButton, true);
   try {
-    const uploaded = [];
     els.codePanel.hidden = true;
     els.shareCode.value = "";
+    const code = await createShareCode();
+    const key = await keyFromCode(code);
+    const lookupKey = await lookupKeyFromCode(code);
+    const encryptedFiles = [];
+
     for (const selectedFile of selectedFiles) {
-      const code = await createShareCode();
-      const key = await keyFromCode(code);
-      const lookupHash = await lookupHashFromCode(code);
       const fileBytes = new Uint8Array(await selectedFile.arrayBuffer());
       const metaBytes = textBytes(
         JSON.stringify({
@@ -211,24 +215,25 @@ async function uploadPhoto() {
         encryptBytes(key, fileBytes),
         encryptBytes(key, metaBytes),
       ]);
-
-      await api("/api/uploads", {
-        method: "POST",
-        body: JSON.stringify({
-          lookupHash,
-          fileIv: fileBox.iv,
-          fileCiphertext: fileBox.ciphertext,
-          metaIv: metaBox.iv,
-          metaCiphertext: metaBox.ciphertext,
-        }),
+      encryptedFiles.push({
+        fileIv: fileBox.iv,
+        fileCiphertext: fileBox.ciphertext,
+        metaIv: metaBox.iv,
+        metaCiphertext: metaBox.ciphertext,
       });
-
-      uploaded.push({ name: selectedFile.name || "picdrop-image", code });
     }
 
-    els.shareCode.value = uploaded.map((item) => `${item.name}\n${item.code}`).join("\n\n");
+    await api("/api/uploads", {
+      method: "POST",
+      body: JSON.stringify({
+        lookupKey,
+        files: encryptedFiles,
+      }),
+    });
+
+    els.shareCode.value = code;
     els.codePanel.hidden = false;
-    showToast(`已加密上傳 ${uploaded.length} 張，有效 ${TTL_MINUTES} 分鐘。`);
+    showToast(`已加密上傳 ${selectedFiles.length} 張，有效 ${TTL_MINUTES} 分鐘。`);
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -240,19 +245,29 @@ async function downloadPhoto() {
   setBusy(els.downloadButton, true);
   try {
     const codes = extractCodes(els.downloadCode.value);
+    const [code] = codes;
+    const key = await keyFromCode(code);
+    const lookupKey = await lookupKeyFromCode(code);
+    const payload = await api("/api/download", {
+      method: "POST",
+      body: JSON.stringify({ lookupKey }),
+    });
+    const encryptedFiles = Array.isArray(payload.files)
+      ? payload.files
+      : [
+          {
+            fileIv: payload.fileIv,
+            fileCiphertext: payload.fileCiphertext,
+            metaIv: payload.metaIv,
+            metaCiphertext: payload.metaCiphertext,
+          },
+        ];
     const files = [];
 
-    for (const code of codes) {
-      const key = await keyFromCode(code);
-      const lookupHash = await lookupHashFromCode(code);
-      const payload = await api("/api/download", {
-        method: "POST",
-        body: JSON.stringify({ lookupHash }),
-      });
-
-      const metaBytes = await decryptBytes(key, payload.metaIv, payload.metaCiphertext);
+    for (const encryptedFile of encryptedFiles) {
+      const metaBytes = await decryptBytes(key, encryptedFile.metaIv, encryptedFile.metaCiphertext);
       const meta = JSON.parse(new TextDecoder().decode(metaBytes));
-      const fileBytes = await decryptBytes(key, payload.fileIv, payload.fileCiphertext);
+      const fileBytes = await decryptBytes(key, encryptedFile.fileIv, encryptedFile.fileCiphertext);
       files.push({
         bytes: fileBytes,
         mime: meta.mime || "application/octet-stream",
