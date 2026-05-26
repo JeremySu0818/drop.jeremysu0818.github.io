@@ -7,7 +7,10 @@
     <title>PicDrop</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="preconnect" href="https://esm.sh" />
     <link rel="stylesheet" href="https://esm.sh/solid-glass@0.0.3/css" />
     <link rel="stylesheet" href="./static/css/style.css" />
@@ -33,14 +36,19 @@
             </span>
             <div>
               <h2>Encrypt & Upload Image</h2>
-              <p>Link expires in 30 minutes and is destroyed immediately after the first download.</p>
+              <p>
+                Code expires in 30 minutes and is destroyed immediately after
+                the first download.
+              </p>
             </div>
           </div>
 
           <label class="drop-zone" id="dropZone">
             <input id="photoInput" type="file" accept="image/*" multiple />
             <span class="drop-title">Choose or Drag Image</span>
-            <span class="drop-meta" id="fileMeta">Supported formats: PNG, JPG, WebP, GIF</span>
+            <span class="drop-meta" id="fileMeta"
+              >Supported formats: PNG, JPG, WebP, GIF</span
+            >
           </label>
 
           <button class="primary-action" id="uploadButton" type="button">
@@ -81,11 +89,16 @@
             </span>
             <div>
               <h2>Decrypt & Download Image</h2>
-              <p>All decryption is processed locally in your browser to ensure privacy.</p>
+              <p>
+                All decryption is processed locally in your browser to ensure
+                privacy.
+              </p>
             </div>
           </div>
 
-          <label class="field-label" for="downloadCode">SHA-256 Decryption Code</label>
+          <label class="field-label" for="downloadCode"
+            >SHA-256 Decryption Code</label
+          >
           <textarea
             id="downloadCode"
             spellcheck="false"
