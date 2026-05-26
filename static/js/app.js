@@ -1,21 +1,21 @@
-import { createLiquidGlass } from "https://esm.sh/solid-glass@0.0.3/engines/svg-refraction";
-import { zipSync } from "https://esm.sh/fflate@0.8.2";
-import { initPageEffects } from "./ui-effects.js";
+import { createLiquidGlass } from 'https://esm.sh/solid-glass@0.0.3/engines/svg-refraction';
+import { zipSync } from 'https://esm.sh/fflate@0.8.2';
+import { initPageEffects } from './ui-effects.js';
 
 const TTL_MINUTES = 30;
-const SERVER_URL = "https://jeremysu0818-picdrop-server.hf.space";
+const SERVER_URL = 'https://picdrop-server.jeremytw.qzz.io';
 
 const els = {
-  photoInput: document.querySelector("#photoInput"),
-  dropZone: document.querySelector("#dropZone"),
-  fileMeta: document.querySelector("#fileMeta"),
-  uploadButton: document.querySelector("#uploadButton"),
-  codePanel: document.querySelector("#codePanel"),
-  shareCode: document.querySelector("#shareCode"),
-  copyButton: document.querySelector("#copyButton"),
-  downloadCode: document.querySelector("#downloadCode"),
-  downloadButton: document.querySelector("#downloadButton"),
-  toast: document.querySelector("#toast"),
+  photoInput: document.querySelector('#photoInput'),
+  dropZone: document.querySelector('#dropZone'),
+  fileMeta: document.querySelector('#fileMeta'),
+  uploadButton: document.querySelector('#uploadButton'),
+  codePanel: document.querySelector('#codePanel'),
+  shareCode: document.querySelector('#shareCode'),
+  copyButton: document.querySelector('#copyButton'),
+  downloadCode: document.querySelector('#downloadCode'),
+  downloadButton: document.querySelector('#downloadButton'),
+  toast: document.querySelector('#toast'),
 };
 
 let selectedFiles = [];
@@ -29,14 +29,14 @@ function setBusy(button, busy) {
 function showToast(message) {
   window.clearTimeout(toastTimer);
   els.toast.textContent = message;
-  els.toast.classList.add("is-visible");
+  els.toast.classList.add('is-visible');
   toastTimer = window.setTimeout(() => {
-    els.toast.classList.remove("is-visible");
+    els.toast.classList.remove('is-visible');
   }, 3600);
 }
 
 function bytesToBase64(bytes) {
-  let binary = "";
+  let binary = '';
   for (let i = 0; i < bytes.length; i += 0x8000) {
     binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   }
@@ -53,11 +53,14 @@ function base64ToBytes(base64) {
 }
 
 function bytesToHex(bytes) {
-  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function base64Url(bytes) {
-  return bytesToBase64(bytes).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+  return bytesToBase64(bytes)
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
 }
 
 function textBytes(value) {
@@ -65,18 +68,25 @@ function textBytes(value) {
 }
 
 async function sha256Bytes(value) {
-  const bytes = typeof value === "string" ? textBytes(value) : value;
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  const bytes = typeof value === 'string' ? textBytes(value) : value;
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
 }
 
 async function keyFromCode(code) {
   const digest = await sha256Bytes(code);
-  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt", "decrypt"]);
+  return crypto.subtle.importKey('raw', digest, 'AES-GCM', false, [
+    'encrypt',
+    'decrypt',
+  ]);
 }
 
 async function encryptBytes(key, bytes) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytes);
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    bytes,
+  );
   return {
     iv: bytesToBase64(iv),
     ciphertext: bytesToBase64(new Uint8Array(encrypted)),
@@ -86,7 +96,11 @@ async function encryptBytes(key, bytes) {
 async function decryptBytes(key, ivBase64, ciphertextBase64) {
   const iv = base64ToBytes(ivBase64);
   const ciphertext = base64ToBytes(ciphertextBase64);
-  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    ciphertext,
+  );
   return new Uint8Array(decrypted);
 }
 
@@ -94,10 +108,10 @@ function extractCodes(value) {
   const codes = value.match(/SHA-256:[a-fA-F0-9]{64}/g) || [];
   const uniqueCodes = [...new Set(codes)];
   if (uniqueCodes.length === 0) {
-    throw new Error("Invalid decryption code format.");
+    throw new Error('Invalid decryption code format.');
   }
   if (uniqueCodes.length > 1) {
-    throw new Error("Only one decryption code is supported per download.");
+    throw new Error('Only one decryption code is supported per download.');
   }
   return uniqueCodes;
 }
@@ -112,7 +126,7 @@ async function createShareCode() {
 }
 
 function formatBytes(size) {
-  const units = ["B", "KB", "MB", "GB"];
+  const units = ['B', 'KB', 'MB', 'GB'];
   let value = size;
   let unit = 0;
   while (value >= 1024 && unit < units.length - 1) {
@@ -123,9 +137,9 @@ function formatBytes(size) {
 }
 
 function setSelectedFiles(files) {
-  selectedFiles = files.filter((file) => file.type.startsWith("image/"));
+  selectedFiles = files.filter((file) => file.type.startsWith('image/'));
   if (selectedFiles.length === 0) {
-    els.fileMeta.textContent = "Supported formats: PNG, JPG, WebP, GIF";
+    els.fileMeta.textContent = 'Supported formats: PNG, JPG, WebP, GIF';
     return;
   }
 
@@ -141,7 +155,7 @@ function setSelectedFiles(files) {
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   document.body.append(link);
@@ -151,16 +165,20 @@ function downloadBlob(blob, filename) {
 }
 
 function uniqueZipName(name, usedNames) {
-  const fallbackName = "picdrop-image";
-  const cleanName = String(name || fallbackName).replaceAll("\\", "/").split("/").pop() || fallbackName;
+  const fallbackName = 'picdrop-image';
+  const cleanName =
+    String(name || fallbackName)
+      .replaceAll('\\', '/')
+      .split('/')
+      .pop() || fallbackName;
   if (!usedNames.has(cleanName)) {
     usedNames.add(cleanName);
     return cleanName;
   }
 
-  const dotIndex = cleanName.lastIndexOf(".");
+  const dotIndex = cleanName.lastIndexOf('.');
   const base = dotIndex > 0 ? cleanName.slice(0, dotIndex) : cleanName;
-  const ext = dotIndex > 0 ? cleanName.slice(dotIndex) : "";
+  const ext = dotIndex > 0 ? cleanName.slice(dotIndex) : '';
   let counter = 2;
   let candidate = `${base}-${counter}${ext}`;
   while (usedNames.has(candidate)) {
@@ -175,27 +193,27 @@ async function api(path, options = {}) {
   const response = await fetch(`${SERVER_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...(options.headers || {}),
     },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(body.error || "Server response failed.");
+    throw new Error(body.error || 'Server response failed.');
   }
   return body;
 }
 
 async function uploadPhoto() {
   if (selectedFiles.length === 0) {
-    showToast("Please select image files first.");
+    showToast('Please select image files first.');
     return;
   }
 
   setBusy(els.uploadButton, true);
   try {
     els.codePanel.hidden = true;
-    els.shareCode.value = "";
+    els.shareCode.value = '';
     const code = await createShareCode();
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
@@ -205,8 +223,8 @@ async function uploadPhoto() {
       const fileBytes = new Uint8Array(await selectedFile.arrayBuffer());
       const metaBytes = textBytes(
         JSON.stringify({
-          name: selectedFile.name || "picdrop-image",
-          mime: selectedFile.type || "application/octet-stream",
+          name: selectedFile.name || 'picdrop-image',
+          mime: selectedFile.type || 'application/octet-stream',
           size: selectedFile.size,
         }),
       );
@@ -223,8 +241,8 @@ async function uploadPhoto() {
       });
     }
 
-    await api("/api/uploads", {
-      method: "POST",
+    await api('/api/uploads', {
+      method: 'POST',
       body: JSON.stringify({
         lookupKey,
         files: encryptedFiles,
@@ -233,7 +251,9 @@ async function uploadPhoto() {
 
     els.shareCode.value = code;
     els.codePanel.hidden = false;
-    showToast(`Successfully encrypted and uploaded ${selectedFiles.length} image(s). Valid for ${TTL_MINUTES} minutes.`);
+    showToast(
+      `Successfully encrypted and uploaded ${selectedFiles.length} image(s). Valid for ${TTL_MINUTES} minutes.`,
+    );
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -248,8 +268,8 @@ async function downloadPhoto() {
     const [code] = codes;
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
-    const payload = await api("/api/download", {
-      method: "POST",
+    const payload = await api('/api/download', {
+      method: 'POST',
       body: JSON.stringify({ lookupKey }),
     });
     const encryptedFiles = Array.isArray(payload.files)
@@ -265,13 +285,21 @@ async function downloadPhoto() {
     const files = [];
 
     for (const encryptedFile of encryptedFiles) {
-      const metaBytes = await decryptBytes(key, encryptedFile.metaIv, encryptedFile.metaCiphertext);
+      const metaBytes = await decryptBytes(
+        key,
+        encryptedFile.metaIv,
+        encryptedFile.metaCiphertext,
+      );
       const meta = JSON.parse(new TextDecoder().decode(metaBytes));
-      const fileBytes = await decryptBytes(key, encryptedFile.fileIv, encryptedFile.fileCiphertext);
+      const fileBytes = await decryptBytes(
+        key,
+        encryptedFile.fileIv,
+        encryptedFile.fileCiphertext,
+      );
       files.push({
         bytes: fileBytes,
-        mime: meta.mime || "application/octet-stream",
-        name: meta.name || "picdrop-image",
+        mime: meta.mime || 'application/octet-stream',
+        name: meta.name || 'picdrop-image',
       });
     }
 
@@ -285,13 +313,16 @@ async function downloadPhoto() {
         zipEntries[uniqueZipName(file.name, usedNames)] = file.bytes;
       }
       const zipBytes = zipSync(zipEntries, { level: 6 });
-      downloadBlob(new Blob([zipBytes], { type: "application/zip" }), "picdrop-images.zip");
+      downloadBlob(
+        new Blob([zipBytes], { type: 'application/zip' }),
+        'picdrop-images.zip',
+      );
     }
 
-    els.downloadCode.value = "";
+    els.downloadCode.value = '';
     showToast(
       files.length === 1
-        ? "Image downloaded successfully. Server copy destroyed."
+        ? 'Image downloaded successfully. Server copy destroyed.'
         : `Successfully downloaded ${files.length} images. Server copy destroyed.`,
     );
   } catch (error) {
@@ -302,28 +333,30 @@ async function downloadPhoto() {
 }
 
 function bindDropZone() {
-  els.photoInput.addEventListener("change", () => {
+  els.photoInput.addEventListener('change', () => {
     setSelectedFiles([...els.photoInput.files]);
   });
 
-  for (const eventName of ["dragenter", "dragover"]) {
+  for (const eventName of ['dragenter', 'dragover']) {
     els.dropZone.addEventListener(eventName, (event) => {
       event.preventDefault();
-      els.dropZone.classList.add("is-dragging");
+      els.dropZone.classList.add('is-dragging');
     });
   }
 
-  for (const eventName of ["dragleave", "drop"]) {
+  for (const eventName of ['dragleave', 'drop']) {
     els.dropZone.addEventListener(eventName, (event) => {
       event.preventDefault();
-      els.dropZone.classList.remove("is-dragging");
+      els.dropZone.classList.remove('is-dragging');
     });
   }
 
-  els.dropZone.addEventListener("drop", (event) => {
-    const files = [...event.dataTransfer.files].filter((item) => item.type.startsWith("image/"));
+  els.dropZone.addEventListener('drop', (event) => {
+    const files = [...event.dataTransfer.files].filter((item) =>
+      item.type.startsWith('image/'),
+    );
     if (files.length === 0) {
-      showToast("Please drag and drop image files only.");
+      showToast('Please drag and drop image files only.');
       return;
     }
     setSelectedFiles(files);
@@ -334,11 +367,11 @@ function init() {
   initPageEffects(createLiquidGlass);
   bindDropZone();
 
-  els.uploadButton.addEventListener("click", uploadPhoto);
-  els.downloadButton.addEventListener("click", downloadPhoto);
-  els.copyButton.addEventListener("click", async () => {
+  els.uploadButton.addEventListener('click', uploadPhoto);
+  els.downloadButton.addEventListener('click', downloadPhoto);
+  els.copyButton.addEventListener('click', async () => {
     await navigator.clipboard.writeText(els.shareCode.value);
-    showToast("Decryption code copied to clipboard.");
+    showToast('Decryption code copied to clipboard.');
   });
 }
 
