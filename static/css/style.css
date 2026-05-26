@@ -221,7 +221,6 @@ svg {
 }
 
 .primary-action,
-.secondary-action,
 .icon-button {
   min-height: 48px;
   border: 0;
@@ -242,7 +241,7 @@ svg {
 }
 
 .primary-action:disabled,
-.secondary-action:disabled {
+.icon-button:disabled {
   cursor: wait;
   opacity: 0.68;
 }
@@ -260,8 +259,7 @@ svg {
   font-weight: 800;
 }
 
-.code-row,
-.settings-row {
+.code-row {
   display: flex;
   gap: 10px;
 }
@@ -309,18 +307,6 @@ textarea:focus {
   background: #f7f8fb;
 }
 
-.secondary-action {
-  flex: 0 0 auto;
-  padding: 0 18px;
-  border-radius: 999px;
-  background: #f7f8fb;
-}
-
-.settings-card {
-  margin-top: 20px;
-  padding: 18px;
-}
-
 .toast {
   position: fixed;
   right: 24px;
@@ -353,8 +339,7 @@ textarea:focus {
   }
 
   .brand-strip,
-  .workspace,
-  .settings-row {
+  .workspace {
     display: grid;
     grid-template-columns: 1fr;
   }

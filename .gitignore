@@ -1,6 +1,1 @@
-node_modules/
-.env
-.DS_Store
-solid-glass-*.tgz
-.pkg/
-server/
+/picdrop-server

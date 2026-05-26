@@ -3,10 +3,9 @@ import { zipSync } from "https://esm.sh/fflate@0.8.2";
 import { initPageEffects } from "./ui-effects.js";
 
 const TTL_MINUTES = 30;
-const DEFAULT_SERVER_URL = "https://picdrop-server.jeremytw.qzz.io";
+const SERVER_URL = "https://jeremysu0818-picdrop-server.hf.space";
 
 const els = {
-  serverStatus: document.querySelector("#serverStatus"),
   photoInput: document.querySelector("#photoInput"),
   dropZone: document.querySelector("#dropZone"),
   fileMeta: document.querySelector("#fileMeta"),
@@ -16,17 +15,11 @@ const els = {
   copyButton: document.querySelector("#copyButton"),
   downloadCode: document.querySelector("#downloadCode"),
   downloadButton: document.querySelector("#downloadButton"),
-  serverUrl: document.querySelector("#serverUrl"),
-  saveServerUrl: document.querySelector("#saveServerUrl"),
   toast: document.querySelector("#toast"),
 };
 
 let selectedFiles = [];
 let toastTimer = 0;
-
-function getServerUrl() {
-  return (localStorage.getItem("picdrop.serverUrl") || DEFAULT_SERVER_URL).replace(/\/+$/, "");
-}
 
 function setBusy(button, busy) {
   button.disabled = busy;
@@ -176,7 +169,7 @@ function uniqueZipName(name, usedNames) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${getServerUrl()}${path}`, {
+  const response = await fetch(`${SERVER_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -322,35 +315,15 @@ function bindDropZone() {
   });
 }
 
-async function checkServer() {
-  els.serverStatus.textContent = "API 檢查中";
-  els.serverStatus.classList.remove("is-online", "is-offline");
-  try {
-    await api("/api/health");
-    els.serverStatus.textContent = "API 已連線";
-    els.serverStatus.classList.add("is-online");
-  } catch {
-    els.serverStatus.textContent = "API 未連線";
-    els.serverStatus.classList.add("is-offline");
-  }
-}
-
 function init() {
-  els.serverUrl.value = getServerUrl();
   initPageEffects(createLiquidGlass);
   bindDropZone();
-  checkServer();
 
   els.uploadButton.addEventListener("click", uploadPhoto);
   els.downloadButton.addEventListener("click", downloadPhoto);
   els.copyButton.addEventListener("click", async () => {
     await navigator.clipboard.writeText(els.shareCode.value);
     showToast("已複製代碼。");
-  });
-  els.saveServerUrl.addEventListener("click", () => {
-    localStorage.setItem("picdrop.serverUrl", els.serverUrl.value.trim().replace(/\/+$/, ""));
-    showToast("Server URL 已儲存。");
-    checkServer();
   });
 }
 
