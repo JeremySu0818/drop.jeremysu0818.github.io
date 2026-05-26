@@ -94,10 +94,10 @@ function extractCodes(value) {
   const codes = value.match(/SHA-256:[a-fA-F0-9]{64}/g) || [];
   const uniqueCodes = [...new Set(codes)];
   if (uniqueCodes.length === 0) {
-    throw new Error("代碼格式不正確。");
+    throw new Error("Invalid decryption code format.");
   }
   if (uniqueCodes.length > 1) {
-    throw new Error("目前一次下載只支援一組 SHA-256 代碼。");
+    throw new Error("Only one decryption code is supported per download.");
   }
   return uniqueCodes;
 }
@@ -125,7 +125,7 @@ function formatBytes(size) {
 function setSelectedFiles(files) {
   selectedFiles = files.filter((file) => file.type.startsWith("image/"));
   if (selectedFiles.length === 0) {
-    els.fileMeta.textContent = "PNG、JPG、WebP、GIF";
+    els.fileMeta.textContent = "Supported formats: PNG, JPG, WebP, GIF";
     return;
   }
 
@@ -136,7 +136,7 @@ function setSelectedFiles(files) {
     return;
   }
 
-  els.fileMeta.textContent = `${selectedFiles.length} 張圖片 · ${formatBytes(totalSize)}`;
+  els.fileMeta.textContent = `Selected ${selectedFiles.length} image(s) · ${formatBytes(totalSize)}`;
 }
 
 function downloadBlob(blob, filename) {
@@ -181,14 +181,14 @@ async function api(path, options = {}) {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(body.error || "伺服器回應失敗。");
+    throw new Error(body.error || "Server response failed.");
   }
   return body;
 }
 
 async function uploadPhoto() {
   if (selectedFiles.length === 0) {
-    showToast("請先選擇圖片。");
+    showToast("Please select image files first.");
     return;
   }
 
@@ -233,7 +233,7 @@ async function uploadPhoto() {
 
     els.shareCode.value = code;
     els.codePanel.hidden = false;
-    showToast(`已加密上傳 ${selectedFiles.length} 張，有效 ${TTL_MINUTES} 分鐘。`);
+    showToast(`Successfully encrypted and uploaded ${selectedFiles.length} image(s). Valid for ${TTL_MINUTES} minutes.`);
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -291,8 +291,8 @@ async function downloadPhoto() {
     els.downloadCode.value = "";
     showToast(
       files.length === 1
-        ? "圖片已下載，伺服器端資料已銷毀。"
-        : `已打包下載 ${files.length} 張，伺服器端資料已銷毀。`,
+        ? "Image downloaded successfully. Server copy destroyed."
+        : `Successfully downloaded ${files.length} images. Server copy destroyed.`,
     );
   } catch (error) {
     showToast(error.message);
@@ -323,7 +323,7 @@ function bindDropZone() {
   els.dropZone.addEventListener("drop", (event) => {
     const files = [...event.dataTransfer.files].filter((item) => item.type.startsWith("image/"));
     if (files.length === 0) {
-      showToast("請拖曳圖片檔。");
+      showToast("Please drag and drop image files only.");
       return;
     }
     setSelectedFiles(files);
@@ -338,7 +338,7 @@ function init() {
   els.downloadButton.addEventListener("click", downloadPhoto);
   els.copyButton.addEventListener("click", async () => {
     await navigator.clipboard.writeText(els.shareCode.value);
-    showToast("已複製代碼。");
+    showToast("Decryption code copied to clipboard.");
   });
 }
 
