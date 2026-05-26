@@ -91,7 +91,7 @@ async function decryptBytes(key, ivBase64, ciphertextBase64) {
 }
 
 function extractCodes(value) {
-  const codes = value.match(/SHA-256:[A-Za-z0-9_-]{43}/g) || [];
+  const codes = value.match(/SHA-256:[a-fA-F0-9]{64}/g) || [];
   const uniqueCodes = [...new Set(codes)];
   if (uniqueCodes.length === 0) {
     throw new Error("代碼格式不正確。");
@@ -108,7 +108,7 @@ async function lookupKeyFromCode(code) {
 
 async function createShareCode() {
   const secret = crypto.getRandomValues(new Uint8Array(32));
-  return `SHA-256:${base64Url(secret)}`;
+  return `SHA-256:${bytesToHex(secret)}`;
 }
 
 function formatBytes(size) {
