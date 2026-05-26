@@ -11,6 +11,13 @@ const BACKGROUNDS = Object.freeze([
   '/static/images/backgrounds/10.jpg',
 ]);
 
+function clearMountedGlassStyles(element) {
+  element.style.removeProperty('--liquid-glass-filter');
+  element.style.removeProperty('backdrop-filter');
+  element.style.removeProperty('-webkit-backdrop-filter');
+  delete element.dataset.liquidGlassMounted;
+}
+
 function getGlassOptions(element) {
   const isMobile = window.matchMedia('(max-width: 760px)').matches;
   const isTargetPopup =
@@ -195,10 +202,7 @@ export function initPageEffects(createLiquidGlass) {
       if (elements.includes(element)) continue;
       const current = registry.get(element);
       current?.svg?.remove();
-      element.style.removeProperty('--liquid-glass-filter');
-      element.style.removeProperty('backdrop-filter');
-      element.style.removeProperty('-webkit-backdrop-filter');
-      delete element.dataset.liquidGlassMounted;
+      clearMountedGlassStyles(element);
       resizeObserver?.unobserve(element);
       registry.delete(element);
     }
@@ -241,10 +245,7 @@ export function initPageEffects(createLiquidGlass) {
     }
 
     for (const element of elements) {
-      element.style.removeProperty('--liquid-glass-filter');
-      element.style.removeProperty('backdrop-filter');
-      element.style.removeProperty('-webkit-backdrop-filter');
-      delete element.dataset.liquidGlassMounted;
+      clearMountedGlassStyles(element);
     }
 
     registry.clear();
