@@ -1,6 +1,6 @@
 import { formatBytes, shortenFilename } from './file-utils.js';
 
-const DEFAULT_FILE_META = 'Supported formats: PNG, JPG, WebP, GIF';
+const DEFAULT_FILE_META = 'Supports all image formats';
 
 export function createToastManager(toastElement) {
   let toastTimer = 0;

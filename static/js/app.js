@@ -1,5 +1,5 @@
 import { createLiquidGlass } from 'https://esm.sh/solid-glass@0.0.3/engines/svg-refraction';
-import { zipSync } from 'https://esm.sh/fflate@0.8.2';
+import { zip } from 'https://esm.sh/fflate@0.8.2';
 import {
   createShareCode,
   decryptBytes,
@@ -94,6 +94,42 @@ function uploadJsonWithProgress(path, payload, onProgress) {
 
     xhr.onerror = () => {
       reject(new Error('Network error while uploading.'));
+    };
+
+    xhr.onload = () => {
+      let body = {};
+      try {
+        body = JSON.parse(xhr.responseText || '{}');
+      } catch {
+        body = {};
+      }
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error(body.error || 'Server response failed.'));
+        return;
+      }
+
+      resolve(body);
+    };
+
+    xhr.send(JSON.stringify(payload));
+  });
+}
+
+function downloadJsonWithProgress(path, payload, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${SERVER_URL}${path}`);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    xhr.onprogress = (event) => {
+      if (typeof onProgress === 'function') {
+        onProgress(event);
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Network error while downloading.'));
     };
 
     xhr.onload = () => {
@@ -260,10 +296,19 @@ async function downloadPhoto() {
     const [code] = codes;
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
-    const payload = await api('/api/download', {
-      method: 'POST',
-      body: JSON.stringify({ lookupKey }),
-    });
+    const payload = await downloadJsonWithProgress(
+      '/api/download',
+      { lookupKey },
+      (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.min(100, Math.round((event.loaded / event.total) * 100));
+          showToast(`Downloading: ${percent}%`, { persist: true });
+        } else {
+          const mb = (event.loaded / (1024 * 1024)).toFixed(1);
+          showToast(`Downloading: ${mb} MB`, { persist: true });
+        }
+      },
+    );
 
     const encryptedFiles = Array.isArray(payload.files)
       ? payload.files
@@ -276,8 +321,11 @@ async function downloadPhoto() {
           },
         ];
     const files = [];
+    const totalFilesCount = encryptedFiles.length;
+    let decryptedCount = 0;
 
     for (const encryptedFile of encryptedFiles) {
+      showToast(`Decrypting file ${decryptedCount + 1} of ${totalFilesCount}...`, { persist: true });
       const metaBytes = await decryptBytes(
         key,
         encryptedFile.metaIv,
@@ -294,19 +342,27 @@ async function downloadPhoto() {
         mime: meta.mime || 'application/octet-stream',
         name: meta.name || 'picdrop-image',
       });
+      decryptedCount += 1;
     }
 
     if (files.length === 1) {
       const [file] = files;
       downloadBlob(new Blob([file.bytes], { type: file.mime }), file.name);
     } else {
+      showToast('Compressing files...', { persist: true });
       const usedNames = new Set();
       const zipEntries = {};
       for (const file of files) {
         zipEntries[uniqueZipName(file.name, usedNames)] = file.bytes;
       }
 
-      const zipBytes = zipSync(zipEntries, { level: 6 });
+      const zipBytes = await new Promise((resolve, reject) => {
+        zip(zipEntries, { level: 6 }, (err, data) => {
+          if (err) reject(err);
+          else resolve(data);
+        });
+      });
+
       downloadBlob(
         new Blob([zipBytes], { type: 'application/zip' }),
         'picdrop-images.zip',
