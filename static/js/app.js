@@ -1,4 +1,5 @@
 import { createLiquidGlass } from "https://esm.sh/solid-glass@0.0.3/engines/svg-refraction";
+import { zipSync } from "https://esm.sh/fflate@0.8.2";
 import { initPageEffects } from "./ui-effects.js";
 
 const TTL_MINUTES = 30;
@@ -142,6 +143,38 @@ function setSelectedFiles(files) {
   els.fileMeta.textContent = `${selectedFiles.length} 張圖片 · ${formatBytes(totalSize)}`;
 }
 
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function uniqueZipName(name, usedNames) {
+  const fallbackName = "picdrop-image";
+  const cleanName = String(name || fallbackName).replaceAll("\\", "/").split("/").pop() || fallbackName;
+  if (!usedNames.has(cleanName)) {
+    usedNames.add(cleanName);
+    return cleanName;
+  }
+
+  const dotIndex = cleanName.lastIndexOf(".");
+  const base = dotIndex > 0 ? cleanName.slice(0, dotIndex) : cleanName;
+  const ext = dotIndex > 0 ? cleanName.slice(dotIndex) : "";
+  let counter = 2;
+  let candidate = `${base}-${counter}${ext}`;
+  while (usedNames.has(candidate)) {
+    counter += 1;
+    candidate = `${base}-${counter}${ext}`;
+  }
+  usedNames.add(candidate);
+  return candidate;
+}
+
 async function api(path, options = {}) {
   const response = await fetch(`${getServerUrl()}${path}`, {
     ...options,
@@ -214,7 +247,7 @@ async function downloadPhoto() {
   setBusy(els.downloadButton, true);
   try {
     const codes = extractCodes(els.downloadCode.value);
-    let downloaded = 0;
+    const files = [];
 
     for (const code of codes) {
       const key = await keyFromCode(code);
@@ -227,20 +260,32 @@ async function downloadPhoto() {
       const metaBytes = await decryptBytes(key, payload.metaIv, payload.metaCiphertext);
       const meta = JSON.parse(new TextDecoder().decode(metaBytes));
       const fileBytes = await decryptBytes(key, payload.fileIv, payload.fileCiphertext);
-      const blob = new Blob([fileBytes], { type: meta.mime || "application/octet-stream" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = meta.name || "picdrop-image";
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      downloaded += 1;
+      files.push({
+        bytes: fileBytes,
+        mime: meta.mime || "application/octet-stream",
+        name: meta.name || "picdrop-image",
+      });
+    }
+
+    if (files.length === 1) {
+      const [file] = files;
+      downloadBlob(new Blob([file.bytes], { type: file.mime }), file.name);
+    } else {
+      const usedNames = new Set();
+      const zipEntries = {};
+      for (const file of files) {
+        zipEntries[uniqueZipName(file.name, usedNames)] = file.bytes;
+      }
+      const zipBytes = zipSync(zipEntries, { level: 6 });
+      downloadBlob(new Blob([zipBytes], { type: "application/zip" }), "picdrop-images.zip");
     }
 
     els.downloadCode.value = "";
-    showToast(`已下載 ${downloaded} 張，伺服器端資料已銷毀。`);
+    showToast(
+      files.length === 1
+        ? "圖片已下載，伺服器端資料已銷毀。"
+        : `已打包下載 ${files.length} 張，伺服器端資料已銷毀。`,
+    );
   } catch (error) {
     showToast(error.message);
   } finally {
