@@ -146,7 +146,18 @@ function setSelectedFiles(files) {
   const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
   if (selectedFiles.length === 1) {
     const [file] = selectedFiles;
-    els.fileMeta.textContent = `${file.name} · ${formatBytes(file.size)}`;
+    let displayName = file.name;
+    if (displayName.length > 30) {
+      const dotIndex = displayName.lastIndexOf('.');
+      if (dotIndex !== -1 && displayName.length - dotIndex <= 6) {
+        const ext = displayName.slice(dotIndex);
+        const base = displayName.slice(0, dotIndex);
+        displayName = `${base.slice(0, 30 - ext.length - 3)}...${ext}`;
+      } else {
+        displayName = `${displayName.slice(0, 27)}...`;
+      }
+    }
+    els.fileMeta.textContent = `${displayName} · ${formatBytes(file.size)}`;
     return;
   }
 

@@ -136,7 +136,7 @@ p {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.03fr) minmax(320px, 0.97fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
 
@@ -149,6 +149,8 @@ p {
   background: var(--panel);
   box-shadow: 0 26px 80px rgba(0, 0, 0, 0.32);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-head {
@@ -192,6 +194,7 @@ svg {
   border-radius: 32px;
   background: rgba(255, 255, 255, 0.25);
   text-align: center;
+  flex-grow: 1;
   transition:
     border-color 160ms ease,
     transform 160ms ease,
@@ -302,6 +305,10 @@ textarea {
   min-height: 118px;
   margin-bottom: 0;
   white-space: pre-wrap;
+}
+
+#downloadCode {
+  flex-grow: 1;
 }
 
 input:focus,
