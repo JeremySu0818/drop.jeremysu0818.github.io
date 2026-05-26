@@ -26,13 +26,16 @@ function setBusy(button, busy) {
   button.dataset.originalText ||= button.textContent.trim();
 }
 
-function showToast(message) {
+function showToast(message, options = {}) {
+  const { persist = false } = options;
   window.clearTimeout(toastTimer);
   els.toast.textContent = message;
   els.toast.classList.add('is-visible');
-  toastTimer = window.setTimeout(() => {
-    els.toast.classList.remove('is-visible');
-  }, 3600);
+  if (!persist) {
+    toastTimer = window.setTimeout(() => {
+      els.toast.classList.remove('is-visible');
+    }, 3600);
+  }
 }
 
 function bytesToBase64(bytes) {
@@ -105,7 +108,8 @@ async function decryptBytes(key, ivBase64, ciphertextBase64) {
 }
 
 function extractCodes(value) {
-  const codes = value.match(/SHA-256:[a-fA-F0-9]{64}/g) || [];
+  const normalized = String(value || '').replaceAll('SHA-256:', '');
+  const codes = normalized.match(/\b[a-fA-F0-9]{64}\b/g) || [];
   const uniqueCodes = [...new Set(codes)];
   if (uniqueCodes.length === 0) {
     throw new Error('Invalid decryption code format.');
@@ -122,7 +126,7 @@ async function lookupKeyFromCode(code) {
 
 async function createShareCode() {
   const secret = crypto.getRandomValues(new Uint8Array(32));
-  return `SHA-256:${bytesToHex(secret)}`;
+  return bytesToHex(secret);
 }
 
 function formatBytes(size) {
@@ -215,6 +219,40 @@ async function api(path, options = {}) {
   return body;
 }
 
+function uploadJsonWithProgress(path, payload, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${SERVER_URL}${path}`);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    xhr.upload.onprogress = (event) => {
+      if (typeof onProgress === 'function') {
+        onProgress(event);
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Network error while uploading.'));
+    };
+
+    xhr.onload = () => {
+      let body = {};
+      try {
+        body = JSON.parse(xhr.responseText || '{}');
+      } catch {
+        body = {};
+      }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error(body.error || 'Server response failed.'));
+        return;
+      }
+      resolve(body);
+    };
+
+    xhr.send(JSON.stringify(payload));
+  });
+}
+
 async function uploadPhoto() {
   if (selectedFiles.length === 0) {
     showToast('Please select image files first.');
@@ -228,9 +266,14 @@ async function uploadPhoto() {
     const code = await createShareCode();
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
-    const encryptedFiles = [];
+    const totalFiles = selectedFiles.length;
+    showToast(`Uploading 0/${totalFiles}`, { persist: true });
+    let uploadedFiles = 0;
+    let lastProgressAt = 0;
 
-    for (const selectedFile of selectedFiles) {
+    for (let i = 0; i < selectedFiles.length; i += 1) {
+      const selectedFile = selectedFiles[i];
+      showToast(`Encrypting ${i + 1}/${totalFiles}`, { persist: true });
       const fileBytes = new Uint8Array(await selectedFile.arrayBuffer());
       const metaBytes = textBytes(
         JSON.stringify({
@@ -244,21 +287,47 @@ async function uploadPhoto() {
         encryptBytes(key, fileBytes),
         encryptBytes(key, metaBytes),
       ]);
-      encryptedFiles.push({
+      const encryptedFile = {
         fileIv: fileBox.iv,
         fileCiphertext: fileBox.ciphertext,
         metaIv: metaBox.iv,
         metaCiphertext: metaBox.ciphertext,
-      });
-    }
+      };
 
-    await api('/api/uploads', {
-      method: 'POST',
-      body: JSON.stringify({
-        lookupKey,
-        files: encryptedFiles,
-      }),
-    });
+      await uploadJsonWithProgress(
+        '/api/uploads',
+        {
+          lookupKey,
+          files: [encryptedFile],
+        },
+        (event) => {
+          const percent = event.total
+            ? Math.min(100, Math.round((event.loaded / event.total) * 100))
+            : 0;
+          const currentTime = Date.now();
+          const shouldRender =
+            percent === 100 || currentTime - lastProgressAt >= 120;
+          if (!shouldRender) {
+            return;
+          }
+          lastProgressAt = currentTime;
+          const inProgressCount = Math.min(uploadedFiles + 1, totalFiles);
+          const overallPercent = Math.min(
+            100,
+            Math.round(((uploadedFiles + percent / 100) / totalFiles) * 100),
+          );
+          showToast(
+            `Uploading ${inProgressCount}/${totalFiles} (${overallPercent}%)`,
+            {
+              persist: true,
+            },
+          );
+        },
+      );
+
+      uploadedFiles += 1;
+      showToast(`Uploading ${uploadedFiles}/${totalFiles}`, { persist: true });
+    }
 
     els.shareCode.value = code;
     els.codePanel.hidden = false;
