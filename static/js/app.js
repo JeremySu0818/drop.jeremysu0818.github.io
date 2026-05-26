@@ -10,9 +10,10 @@ const els = {
   dropZone: document.querySelector('#dropZone'),
   fileMeta: document.querySelector('#fileMeta'),
   uploadButton: document.querySelector('#uploadButton'),
-  codePanel: document.querySelector('#codePanel'),
+  codeModal: document.querySelector('#codeModal'),
   shareCode: document.querySelector('#shareCode'),
   copyButton: document.querySelector('#copyButton'),
+  closeModalButton: document.querySelector('#closeModalButton'),
   downloadCode: document.querySelector('#downloadCode'),
   downloadButton: document.querySelector('#downloadButton'),
   toast: document.querySelector('#toast'),
@@ -261,7 +262,6 @@ async function uploadPhoto() {
 
   setBusy(els.uploadButton, true);
   try {
-    els.codePanel.hidden = true;
     els.shareCode.value = '';
     const code = await createShareCode();
     const key = await keyFromCode(code);
@@ -330,7 +330,7 @@ async function uploadPhoto() {
     }
 
     els.shareCode.value = code;
-    els.codePanel.hidden = false;
+    els.codeModal.showModal();
     showToast(
       `Successfully encrypted and uploaded ${selectedFiles.length} image(s). Valid for ${TTL_MINUTES} minutes.`,
     );
@@ -415,6 +415,7 @@ async function downloadPhoto() {
 function bindDropZone() {
   els.photoInput.addEventListener('change', () => {
     setSelectedFiles([...els.photoInput.files]);
+    els.photoInput.value = '';
   });
 
   for (const eventName of ['dragenter', 'dragover']) {
@@ -452,6 +453,11 @@ function init() {
   els.copyButton.addEventListener('click', async () => {
     await navigator.clipboard.writeText(els.shareCode.value);
     showToast('Decryption code copied to clipboard.');
+  });
+
+  els.closeModalButton.addEventListener('click', () => {
+    els.codeModal.close();
+    setSelectedFiles([]);
   });
 }
 

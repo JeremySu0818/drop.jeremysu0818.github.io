@@ -57,27 +57,6 @@
             </svg>
             Secure Encrypt & Upload
           </button>
-
-          <div class="code-panel" id="codePanel" hidden>
-            <label for="shareCode">Decryption Code</label>
-            <div class="code-row">
-              <textarea id="shareCode" readonly></textarea>
-              <button
-                class="icon-button"
-                id="copyButton"
-                type="button"
-                title="Copy Decryption Code"
-                aria-label="Copy Decryption Code"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8 8h10v12H8z" />
-                  <path
-                    d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
         </article>
 
         <article class="glass-card receive-card" data-liquid-glass>
@@ -113,6 +92,45 @@
           </button>
         </article>
       </section>
+
+      <dialog class="glass-card code-modal" id="codeModal" data-liquid-glass>
+        <div class="card-head">
+          <span class="icon-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </span>
+          <div>
+            <h2>Upload Complete</h2>
+            <p>Share this decryption code.</p>
+          </div>
+        </div>
+
+        <div class="code-panel">
+          <label for="shareCode">Decryption Code</label>
+          <div class="code-row">
+            <textarea id="shareCode" readonly></textarea>
+            <button
+              class="icon-button"
+              id="copyButton"
+              type="button"
+              title="Copy Decryption Code"
+              aria-label="Copy Decryption Code"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 8h10v12H8z" />
+                <path
+                  d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button class="primary-action close-modal-btn" id="closeModalButton" type="button">
+          Done
+        </button>
+      </dialog>
 
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </main>

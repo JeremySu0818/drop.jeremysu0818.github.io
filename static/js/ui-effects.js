@@ -1,31 +1,32 @@
 const BACKGROUNDS = Object.freeze([
-  "/static/images/backgrounds/1.jpg",
-  "/static/images/backgrounds/2.jpg",
-  "/static/images/backgrounds/3.jpg",
-  "/static/images/backgrounds/4.jpg",
-  "/static/images/backgrounds/5.jpg",
-  "/static/images/backgrounds/6.jpg",
-  "/static/images/backgrounds/7.jpg",
-  "/static/images/backgrounds/8.jpg",
-  "/static/images/backgrounds/9.jpg",
-  "/static/images/backgrounds/10.jpg",
+  '/static/images/backgrounds/1.jpg',
+  '/static/images/backgrounds/2.jpg',
+  '/static/images/backgrounds/3.jpg',
+  '/static/images/backgrounds/4.jpg',
+  '/static/images/backgrounds/5.jpg',
+  '/static/images/backgrounds/6.jpg',
+  '/static/images/backgrounds/7.jpg',
+  '/static/images/backgrounds/8.jpg',
+  '/static/images/backgrounds/9.jpg',
+  '/static/images/backgrounds/10.jpg',
 ]);
 
 function getGlassOptions(element) {
-  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  const isMobile = window.matchMedia('(max-width: 760px)').matches;
   const isTargetPopup =
     element &&
-    (element.closest("#change-password-modal") ||
-      element.closest("#edit-album-modal") ||
-      element.closest("#edit-poll-modal") ||
-      element.closest("#new-chat-modal"));
+    (element.closest('#change-password-modal') ||
+      element.closest('#edit-album-modal') ||
+      element.closest('#edit-poll-modal') ||
+      element.closest('#new-chat-modal') ||
+      element.closest('#codeModal'));
   return {
     radius: isMobile ? 32 : 60,
     bezelWidth: 20,
     glassThickness: 300,
     blur: isTargetPopup ? 3 : 0,
     refractiveIndex: 1.5,
-    surface: "convexSquircle",
+    surface: 'convexSquircle',
     specularOpacity: 1,
   };
 }
@@ -36,17 +37,23 @@ function pickRandomBackground() {
 
 function setRandomBackground() {
   const background = pickRandomBackground();
-  document.documentElement.style.setProperty("--page-background", `url("${background}")`);
-  document.documentElement.style.setProperty("--page-background-position", "center");
+  document.documentElement.style.setProperty(
+    '--page-background',
+    `url("${background}")`,
+  );
+  document.documentElement.style.setProperty(
+    '--page-background-position',
+    'center',
+  );
   const img = new Image();
-  img.crossOrigin = "anonymous";
+  img.crossOrigin = 'anonymous';
   img.src = background;
   img.onload = () => {
     try {
-      const canvas = document.createElement("canvas");
+      const canvas = document.createElement('canvas');
       canvas.width = 100;
       canvas.height = 50;
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctx.drawImage(img, 0, 0, 100, 50);
       const imgData = ctx.getImageData(0, 0, 100, 50).data;
@@ -103,11 +110,14 @@ function setRandomBackground() {
         }
       }
       if (goodPositions.length > 0) {
-        const chosenX = goodPositions[Math.floor(Math.random() * goodPositions.length)];
-        document.documentElement.style.setProperty("--page-background-position", `${chosenX}% center`);
+        const chosenX =
+          goodPositions[Math.floor(Math.random() * goodPositions.length)];
+        document.documentElement.style.setProperty(
+          '--page-background-position',
+          `${chosenX}% center`,
+        );
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   };
 }
 
@@ -135,35 +145,35 @@ function mountGlassFilter(createLiquidGlass, element, registry) {
     ...getGlassOptions(element),
   });
 
-  const holder = document.createElement("div");
+  const holder = document.createElement('div');
   holder.innerHTML = glass.svgFilter;
   const svg = holder.firstElementChild;
 
   if (svg) {
-    svg.setAttribute("aria-hidden", "true");
-    svg.style.position = "absolute";
-    svg.style.width = "0";
-    svg.style.height = "0";
-    svg.style.overflow = "hidden";
-    svg.style.pointerEvents = "none";
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.position = 'absolute';
+    svg.style.width = '0';
+    svg.style.height = '0';
+    svg.style.overflow = 'hidden';
+    svg.style.pointerEvents = 'none';
     document.body.appendChild(svg);
   }
 
-  element.style.setProperty("--liquid-glass-filter", glass.filterRef);
+  element.style.setProperty('--liquid-glass-filter', glass.filterRef);
   element.style.backdropFilter = glass.filterRef;
   element.style.WebkitBackdropFilter = glass.filterRef;
-  element.dataset.liquidGlassMounted = "true";
+  element.dataset.liquidGlassMounted = 'true';
   registry.set(element, { svg, width, height });
 }
 
 export function initPageEffects(createLiquidGlass) {
-  if (typeof window === "undefined" || typeof document === "undefined") {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return () => {};
   }
 
   setRandomBackground();
 
-  if (typeof createLiquidGlass !== "function") {
+  if (typeof createLiquidGlass !== 'function') {
     return () => {};
   }
 
@@ -171,7 +181,7 @@ export function initPageEffects(createLiquidGlass) {
   let elements = [];
 
   const syncElements = () => {
-    elements = Array.from(document.querySelectorAll("[data-liquid-glass]"));
+    elements = Array.from(document.querySelectorAll('[data-liquid-glass]'));
 
     for (const element of elements) {
       if (registry.has(element)) continue;
@@ -185,9 +195,9 @@ export function initPageEffects(createLiquidGlass) {
       if (elements.includes(element)) continue;
       const current = registry.get(element);
       current?.svg?.remove();
-      element.style.removeProperty("--liquid-glass-filter");
-      element.style.removeProperty("backdrop-filter");
-      element.style.removeProperty("-webkit-backdrop-filter");
+      element.style.removeProperty('--liquid-glass-filter');
+      element.style.removeProperty('backdrop-filter');
+      element.style.removeProperty('-webkit-backdrop-filter');
       delete element.dataset.liquidGlassMounted;
       resizeObserver?.unobserve(element);
       registry.delete(element);
@@ -208,7 +218,7 @@ export function initPageEffects(createLiquidGlass) {
   };
 
   const resizeObserver =
-    typeof ResizeObserver === "function"
+    typeof ResizeObserver === 'function'
       ? new ResizeObserver((entries) => {
           for (const entry of entries) {
             mountGlassFilter(createLiquidGlass, entry.target, registry);
@@ -218,12 +228,12 @@ export function initPageEffects(createLiquidGlass) {
 
   syncElements();
   refreshAll();
-  window.addEventListener("resize", refreshAll);
-  window.addEventListener("liquid-glass:refresh", refreshAll);
+  window.addEventListener('resize', refreshAll);
+  window.addEventListener('liquid-glass:refresh', refreshAll);
 
   return () => {
-    window.removeEventListener("resize", refreshAll);
-    window.removeEventListener("liquid-glass:refresh", refreshAll);
+    window.removeEventListener('resize', refreshAll);
+    window.removeEventListener('liquid-glass:refresh', refreshAll);
     resizeObserver?.disconnect();
 
     for (const { svg } of registry.values()) {
@@ -231,9 +241,9 @@ export function initPageEffects(createLiquidGlass) {
     }
 
     for (const element of elements) {
-      element.style.removeProperty("--liquid-glass-filter");
-      element.style.removeProperty("backdrop-filter");
-      element.style.removeProperty("-webkit-backdrop-filter");
+      element.style.removeProperty('--liquid-glass-filter');
+      element.style.removeProperty('backdrop-filter');
+      element.style.removeProperty('-webkit-backdrop-filter');
       delete element.dataset.liquidGlassMounted;
     }
 
