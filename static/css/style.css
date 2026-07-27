@@ -362,9 +362,15 @@ textarea:focus {
 
 .toast {
   position: fixed;
+  inset: auto 24px 24px auto;
   right: 24px;
   bottom: 24px;
-  z-index: 20;
+  top: auto;
+  left: auto;
+  margin: 0;
+  width: auto;
+  height: auto;
+  z-index: 2147483647;
   max-width: min(420px, calc(100vw - 48px));
   padding: 14px 16px;
   border: 1px solid rgba(16, 19, 24, 0.1);

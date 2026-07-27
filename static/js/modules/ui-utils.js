@@ -4,20 +4,60 @@ const DEFAULT_FILE_META = 'Supports all file formats';
 
 export function createToastManager(toastElement) {
   let toastTimer = 0;
+  let hideTimer = 0;
+
+  const hide = () => {
+    window.clearTimeout(toastTimer);
+    window.clearTimeout(hideTimer);
+    toastElement.classList.remove('is-visible');
+    hideTimer = window.setTimeout(() => {
+      if (
+        !toastElement.classList.contains('is-visible') &&
+        typeof toastElement.hidePopover === 'function' &&
+        toastElement.matches?.(':popover-open')
+      ) {
+        try {
+          toastElement.hidePopover();
+        } catch (e) {}
+      }
+    }, 200);
+  };
 
   return {
     show(message, options = {}) {
       const { persist = false } = options;
       window.clearTimeout(toastTimer);
+      window.clearTimeout(hideTimer);
+
+      // Immediately hide previous popover if currently open so re-opening pushes it to the absolute top of the Top Layer stack
+      if (
+        typeof toastElement.hidePopover === 'function' &&
+        toastElement.matches?.(':popover-open')
+      ) {
+        try {
+          toastElement.hidePopover();
+        } catch (e) {}
+      }
+
       toastElement.textContent = message;
+
+      if (typeof toastElement.showPopover === 'function') {
+        try {
+          toastElement.showPopover();
+        } catch (e) {}
+      }
+
+      toastElement.classList.remove('is-visible');
+      void toastElement.offsetWidth;
       toastElement.classList.add('is-visible');
 
       if (!persist) {
         toastTimer = window.setTimeout(() => {
-          toastElement.classList.remove('is-visible');
+          hide();
         }, 3600);
       }
     },
+    hide,
   };
 }
 
