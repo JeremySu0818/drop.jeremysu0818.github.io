@@ -37,7 +37,7 @@ export function downloadBlob(blob, filename) {
 }
 
 export function uniqueZipName(name, usedNames) {
-  const fallbackName = 'picdrop-image';
+  const fallbackName = 'picdrop-file';
   const cleanName =
     String(name || fallbackName)
       .replaceAll('\\', '/')

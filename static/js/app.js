@@ -11,7 +11,7 @@ import {
 import { downloadBlob, uniqueZipName } from './modules/file-utils.js';
 import {
   createToastManager,
-  filterImageFiles,
+  filterMediaFiles,
   setBusy,
   summarizeSelectedFiles,
 } from './modules/ui-utils.js';
@@ -59,7 +59,7 @@ function extractCodes(value) {
 }
 
 function setSelectedFiles(files) {
-  selectedFiles = filterImageFiles(files);
+  selectedFiles = filterMediaFiles(files);
   els.fileMeta.textContent = summarizeSelectedFiles(selectedFiles);
 }
 
@@ -184,7 +184,7 @@ async function createEncryptedFile(file, key) {
   const fileBytes = new Uint8Array(await file.arrayBuffer());
   const metaBytes = textBytes(
     JSON.stringify({
-      name: file.name || 'picdrop-image',
+      name: file.name || 'picdrop-file',
       mime: file.type || 'application/octet-stream',
       size: file.size,
     }),
@@ -205,7 +205,7 @@ async function createEncryptedFile(file, key) {
 
 async function uploadPhoto() {
   if (selectedFiles.length === 0) {
-    showToast('Please select image files first.');
+    showToast('Please select image or video files first.');
     return;
   }
 
@@ -280,7 +280,7 @@ async function uploadPhoto() {
     els.shareCode.value = code;
     els.codeModal.showModal();
     showToast(
-      `Successfully encrypted and uploaded ${filesToUpload.length} image(s). Valid for ${TTL_MINUTES} minutes.`,
+      `Successfully encrypted and uploaded ${filesToUpload.length} file(s). Valid for ${TTL_MINUTES} minutes.`,
     );
   } catch (error) {
     showToast(error.message);
@@ -340,7 +340,7 @@ async function downloadPhoto() {
       files.push({
         bytes: fileBytes,
         mime: meta.mime || 'application/octet-stream',
-        name: meta.name || 'picdrop-image',
+        name: meta.name || 'picdrop-file',
       });
       decryptedCount += 1;
     }
@@ -365,15 +365,15 @@ async function downloadPhoto() {
 
       downloadBlob(
         new Blob([zipBytes], { type: 'application/zip' }),
-        'picdrop-images.zip',
+        'picdrop-files.zip',
       );
     }
 
     els.downloadCode.value = '';
     showToast(
       files.length === 1
-        ? 'Image downloaded successfully. Server copy destroyed.'
-        : `Successfully downloaded ${files.length} images. Server copy destroyed.`,
+        ? 'File downloaded successfully. Server copy destroyed.'
+        : `Successfully downloaded ${files.length} files. Server copy destroyed.`,
     );
   } catch (error) {
     showToast(error.message);
@@ -403,9 +403,9 @@ function bindDropZone() {
   }
 
   els.dropZone.addEventListener('drop', (event) => {
-    const files = filterImageFiles([...event.dataTransfer.files]);
+    const files = filterMediaFiles([...event.dataTransfer.files]);
     if (files.length === 0) {
-      showToast('Please drag and drop image files only.');
+      showToast('Please drag and drop image or video files only.');
       return;
     }
 
