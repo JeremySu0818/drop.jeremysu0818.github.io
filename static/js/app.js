@@ -20,7 +20,7 @@ import { initPageEffects } from './modules/ui-effects.js';
 const TTL_MINUTES = 30;
 const MAX_PARALLEL_UPLOADS = 3;
 const PROGRESS_RENDER_INTERVAL_MS = 120;
-const SERVER_URL = 'https://picdrop-server.jeremytw.qzz.io';
+const SERVER_URL = 'https://drop-server.jeremytw.qzz.io';
 
 const els = {
   photoInput: document.querySelector('#photoInput'),
@@ -225,7 +225,10 @@ async function uploadPhoto() {
 
     const renderProgress = (force = false) => {
       const currentTime = Date.now();
-      if (!force && currentTime - lastProgressAt < PROGRESS_RENDER_INTERVAL_MS) {
+      if (
+        !force &&
+        currentTime - lastProgressAt < PROGRESS_RENDER_INTERVAL_MS
+      ) {
         return;
       }
 
@@ -252,30 +255,36 @@ async function uploadPhoto() {
       { persist: true },
     );
 
-    await eachWithConcurrency(filesToUpload, concurrency, async (file, index) => {
-      const encryptedFile = await createEncryptedFile(file, key);
-      encryptedFiles += 1;
-      showToast(`Encrypted ${encryptedFiles}/${totalFiles}`, { persist: true });
+    await eachWithConcurrency(
+      filesToUpload,
+      concurrency,
+      async (file, index) => {
+        const encryptedFile = await createEncryptedFile(file, key);
+        encryptedFiles += 1;
+        showToast(`Encrypted ${encryptedFiles}/${totalFiles}`, {
+          persist: true,
+        });
 
-      await uploadJsonWithProgress(
-        '/api/uploads',
-        {
-          lookupKey,
-          files: [encryptedFile],
-        },
-        (event) => {
-          const percent = event.total
-            ? Math.min(100, Math.round((event.loaded / event.total) * 100))
-            : 0;
-          uploadProgress[index] = percent;
-          renderProgress(percent === 100);
-        },
-      );
+        await uploadJsonWithProgress(
+          '/api/uploads',
+          {
+            lookupKey,
+            files: [encryptedFile],
+          },
+          (event) => {
+            const percent = event.total
+              ? Math.min(100, Math.round((event.loaded / event.total) * 100))
+              : 0;
+            uploadProgress[index] = percent;
+            renderProgress(percent === 100);
+          },
+        );
 
-      uploadedFiles += 1;
-      uploadProgress[index] = 0;
-      renderProgress(true);
-    });
+        uploadedFiles += 1;
+        uploadProgress[index] = 0;
+        renderProgress(true);
+      },
+    );
 
     els.shareCode.value = code;
     els.codeModal.showModal();
@@ -301,7 +310,10 @@ async function downloadPhoto() {
       { lookupKey },
       (event) => {
         if (event.lengthComputable) {
-          const percent = Math.min(100, Math.round((event.loaded / event.total) * 100));
+          const percent = Math.min(
+            100,
+            Math.round((event.loaded / event.total) * 100),
+          );
           showToast(`Downloading: ${percent}%`, { persist: true });
         } else {
           const mb = (event.loaded / (1024 * 1024)).toFixed(1);
@@ -325,7 +337,10 @@ async function downloadPhoto() {
     let decryptedCount = 0;
 
     for (const encryptedFile of encryptedFiles) {
-      showToast(`Decrypting file ${decryptedCount + 1} of ${totalFilesCount}...`, { persist: true });
+      showToast(
+        `Decrypting file ${decryptedCount + 1} of ${totalFilesCount}...`,
+        { persist: true },
+      );
       const metaBytes = await decryptBytes(
         key,
         encryptedFile.metaIv,
