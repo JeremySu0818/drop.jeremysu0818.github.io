@@ -184,7 +184,7 @@ async function createEncryptedFile(file, key) {
   const fileBytes = new Uint8Array(await file.arrayBuffer());
   const metaBytes = textBytes(
     JSON.stringify({
-      name: file.name || 'picdrop-file',
+      name: file.name || 'drop-file',
       mime: file.type || 'application/octet-stream',
       size: file.size,
     }),
@@ -205,7 +205,7 @@ async function createEncryptedFile(file, key) {
 
 async function uploadPhoto() {
   if (selectedFiles.length === 0) {
-    showToast('Please select image or video files first.');
+    showToast('Please select files to upload first.');
     return;
   }
 
@@ -340,7 +340,7 @@ async function downloadPhoto() {
       files.push({
         bytes: fileBytes,
         mime: meta.mime || 'application/octet-stream',
-        name: meta.name || 'picdrop-file',
+        name: meta.name || 'drop-file',
       });
       decryptedCount += 1;
     }
@@ -365,7 +365,7 @@ async function downloadPhoto() {
 
       downloadBlob(
         new Blob([zipBytes], { type: 'application/zip' }),
-        'picdrop-files.zip',
+        'drop-files.zip',
       );
     }
 
@@ -405,7 +405,7 @@ function bindDropZone() {
   els.dropZone.addEventListener('drop', (event) => {
     const files = filterMediaFiles([...event.dataTransfer.files]);
     if (files.length === 0) {
-      showToast('Please drag and drop image or video files only.');
+      showToast('Please drag and drop valid files.');
       return;
     }
 

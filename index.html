@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <title>PicDrop</title>
+    <title>Drop</title>
     <link rel="icon" type="image/x-icon" href="./favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,10 +18,19 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="brand-strip" aria-label="PicDrop">
-        <div>
-          <p class="eyebrow">PicDrop</p>
-          <h1>Secure Encrypted Image & Video Sharing</h1>
+      <section class="brand-strip" aria-label="Drop">
+        <div class="brand-header">
+          <p class="eyebrow">Drop</p>
+          <h1>Secure Encrypted File Sharing</h1>
+          <p class="brand-subtitle">
+            Uncensored &amp; zero-knowledge file sharing. All encryption is processed locally in your browser — we cannot access, view, or log your file contents.
+          </p>
+          <div class="disclaimer-bar">
+            <svg viewBox="0 0 24 24" aria-hidden="true" role="img">
+              <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            </svg>
+            <span><strong>Disclaimer:</strong> Users are solely responsible for transferred files. Drop assumes no liability for user content or activities.</span>
+          </div>
         </div>
       </section>
 
@@ -36,7 +45,7 @@
               </svg>
             </span>
             <div>
-              <h2>Encrypt & Upload Image / Video</h2>
+              <h2>Encrypt & Upload Any File</h2>
               <p>
                 Code expires in 30 minutes and is destroyed immediately after
                 the first download.
@@ -45,10 +54,10 @@
           </div>
 
           <label class="drop-zone" id="dropZone">
-            <input id="photoInput" type="file" accept="image/*,video/*" multiple />
-            <span class="drop-title">Choose or Drag Image or Video</span>
+            <input id="photoInput" type="file" multiple />
+            <span class="drop-title">Choose or Drag Any File</span>
             <span class="drop-meta" id="fileMeta"
-              >Supports image and video formats</span
+              >Supports all file formats</span
             >
           </label>
 
@@ -68,7 +77,7 @@
               </svg>
             </span>
             <div>
-              <h2>Decrypt & Download Media</h2>
+              <h2>Decrypt & Download File</h2>
               <p>
                 All decryption is processed locally in your browser to ensure
                 privacy.
@@ -89,7 +98,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
             </svg>
-            Decrypt & Download Media
+            Decrypt & Download File
           </button>
         </article>
       </section>

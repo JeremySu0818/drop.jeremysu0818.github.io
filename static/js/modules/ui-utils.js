@@ -1,6 +1,6 @@
 import { formatBytes, shortenFilename } from './file-utils.js';
 
-const DEFAULT_FILE_META = 'Supports image and video formats';
+const DEFAULT_FILE_META = 'Supports all file formats';
 
 export function createToastManager(toastElement) {
   let toastTimer = 0;
@@ -41,11 +41,10 @@ export function summarizeSelectedFiles(files) {
 }
 
 export function filterMediaFiles(files) {
-  return files.filter(
-    (file) => file.type.startsWith('image/') || file.type.startsWith('video/'),
-  );
+  return files.filter(Boolean);
 }
 
 export const filterImageFiles = filterMediaFiles;
 
 export { DEFAULT_FILE_META };
+
