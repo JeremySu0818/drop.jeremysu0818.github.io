@@ -1,15 +1,18 @@
 import { createLiquidGlass } from 'https://esm.sh/solid-glass@0.0.3/engines/svg-refraction';
-import { zip } from 'https://esm.sh/fflate@0.8.2';
+import {
+  AsyncZipDeflate,
+  Zip,
+  zip,
+} from 'https://esm.sh/fflate@0.8.2';
 import {
   createShareCode,
-  decryptChunkBytes,
   decryptBytes,
-  encryptChunkBytes,
   encryptBytes,
   keyFromCode,
   lookupKeyFromCode,
   textBytes,
 } from './modules/crypto-utils.js';
+import { createChunkCrypto } from './modules/chunk-crypto-client.js';
 import { downloadBlob, uniqueZipName } from './modules/file-utils.js';
 import {
   createToastManager,
@@ -112,42 +115,6 @@ function uploadBinaryWithProgress(path, bytes, iv, onProgress) {
   });
 }
 
-function uploadJsonWithProgress(path, payload, onProgress) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${SERVER_URL}${path}`);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-
-    xhr.upload.onprogress = (event) => {
-      if (typeof onProgress === 'function') {
-        onProgress(event);
-      }
-    };
-
-    xhr.onerror = () => {
-      reject(new Error('Network error while uploading.'));
-    };
-
-    xhr.onload = () => {
-      let body = {};
-      try {
-        body = JSON.parse(xhr.responseText || '{}');
-      } catch {
-        body = {};
-      }
-
-      if (xhr.status < 200 || xhr.status >= 300) {
-        reject(new Error(body.error || 'Server response failed.'));
-        return;
-      }
-
-      resolve(body);
-    };
-
-    xhr.send(JSON.stringify(payload));
-  });
-}
-
 function downloadJsonWithProgress(path, payload, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -236,10 +203,12 @@ async function uploadPhoto() {
   }
 
   setBusy(els.uploadButton, true);
+  let chunkCrypto;
   try {
     els.shareCode.value = '';
     const filesToUpload = selectedFiles.slice();
     const code = await createShareCode();
+    chunkCrypto = await createChunkCrypto(code);
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
     const totalFiles = filesToUpload.length;
@@ -333,8 +302,8 @@ async function uploadPhoto() {
                 : error?.message || 'Unable to read source file.';
             throw new Error(`${file.name}: ${detail}`);
           }
-          const encrypted = await encryptChunkBytes(key, sourceBytes);
           const sourceLength = sourceBytes.byteLength;
+          const encrypted = await chunkCrypto.encrypt(sourceBytes);
           sourceBytes = null;
           await uploadBinaryWithProgress(
             `/api/chunked-uploads/${uploadId}/files/${fileId}/chunks/${chunkIndex}`,
@@ -382,6 +351,7 @@ async function uploadPhoto() {
   } catch (error) {
     showToast(error.message);
   } finally {
+    chunkCrypto?.terminate();
     setBusy(els.uploadButton, false);
   }
 }
@@ -398,10 +368,11 @@ async function createDownloadSink(name, mime, size) {
       async close() {
         await writable.close();
         const file = await handle.getFile();
-        downloadBlob(file, name);
+        const cleanupDelay = 60 * 60 * 1000;
+        downloadBlob(file, name, cleanupDelay);
         window.setTimeout(
           () => root.removeEntry(tempName).catch(() => {}),
-          10 * 60 * 1000,
+          cleanupDelay,
         );
       },
       async abort() {
@@ -430,7 +401,64 @@ async function createDownloadSink(name, mime, size) {
   };
 }
 
-async function downloadChunkedFiles(code, key, lookupKey) {
+async function cleanupStaleDownloadFiles() {
+  if (!navigator.storage?.getDirectory) return;
+  try {
+    const root = await navigator.storage.getDirectory();
+    for await (const [name] of root.entries()) {
+      if (name.startsWith('drop-')) {
+        await root.removeEntry(name).catch(() => {});
+      }
+    }
+  } catch {}
+}
+
+async function createStreamingZipSink(totalSize) {
+  const output = await createDownloadSink(
+    'drop-files.zip',
+    'application/zip',
+    totalSize + 1024 * 1024,
+  );
+  const entries = [];
+  let outputWrites = Promise.resolve();
+  let settleFinal;
+  let rejectFinal;
+  let aborted = false;
+  const finished = new Promise((resolve, reject) => {
+    settleFinal = resolve;
+    rejectFinal = reject;
+  });
+  const archive = new Zip((error, data, final) => {
+    if (aborted) return;
+    if (error) {
+      rejectFinal(error);
+      return;
+    }
+    outputWrites = outputWrites.then(() => output.write(data));
+    if (final) outputWrites.then(settleFinal, rejectFinal);
+  });
+
+  return {
+    addFile(name) {
+      const entry = new AsyncZipDeflate(name, { level: 0 });
+      entries.push(entry);
+      archive.add(entry);
+      return entry;
+    },
+    async close() {
+      archive.end();
+      await finished;
+      await output.close();
+    },
+    async abort() {
+      aborted = true;
+      for (const entry of entries) entry.terminate?.();
+      await output.abort();
+    },
+  };
+}
+
+async function downloadChunkedFiles(key, lookupKey, chunkCrypto) {
   const payload = await api('/api/chunked-download', {
     method: 'POST',
     body: JSON.stringify({ lookupKey }),
@@ -439,20 +467,33 @@ async function downloadChunkedFiles(code, key, lookupKey) {
   let downloadedBytes = 0;
 
   try {
-    for (let fileIndex = 0; fileIndex < payload.files.length; fileIndex += 1) {
-      const encryptedFile = payload.files[fileIndex];
+    const files = [];
+    for (const encryptedFile of payload.files) {
       const metaBytes = await decryptBytes(
         key,
         encryptedFile.metaIv,
         encryptedFile.metaCiphertext,
       );
       const meta = JSON.parse(new TextDecoder().decode(metaBytes));
-      const sink = await createDownloadSink(
-        meta.name || 'drop-file',
-        meta.mime || 'application/octet-stream',
-        encryptedFile.size,
-      );
-      try {
+      files.push({ encryptedFile, meta });
+    }
+
+    const multipleFiles = files.length > 1;
+    const usedNames = new Set();
+    const sink = multipleFiles
+      ? await createStreamingZipSink(totalBytes)
+      : await createDownloadSink(
+          files[0].meta.name || 'drop-file',
+          files[0].meta.mime || 'application/octet-stream',
+          files[0].encryptedFile.size,
+        );
+
+    try {
+      for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {
+        const { encryptedFile, meta } = files[fileIndex];
+        const zipEntry = multipleFiles
+          ? sink.addFile(uniqueZipName(meta.name || 'drop-file', usedNames))
+          : null;
         for (
           let chunkIndex = 0;
           chunkIndex < encryptedFile.chunkCount;
@@ -473,23 +514,34 @@ async function downloadChunkedFiles(code, key, lookupKey) {
           const iv = response.headers.get('X-Chunk-IV');
           if (!iv) throw new Error('Encrypted chunk IV is missing.');
           const ciphertext = new Uint8Array(await response.arrayBuffer());
-          const plaintext = await decryptChunkBytes(key, iv, ciphertext);
-          await sink.write(plaintext);
-          downloadedBytes += plaintext.byteLength;
+          const plaintext = await chunkCrypto.decrypt(iv, ciphertext);
+          const plaintextLength = plaintext.byteLength;
+          if (zipEntry) {
+            zipEntry.push(
+              plaintext,
+              chunkIndex === encryptedFile.chunkCount - 1,
+            );
+          } else {
+            await sink.write(plaintext);
+          }
+          downloadedBytes += plaintextLength;
           const percent =
             totalBytes === 0
               ? 100
-              : Math.min(100, Math.round((downloadedBytes / totalBytes) * 100));
+              : Math.min(
+                  100,
+                  Math.round((downloadedBytes / totalBytes) * 100),
+                );
           showToast(
             `Downloading file ${fileIndex + 1}/${payload.files.length} (${percent}%)`,
             { persist: true },
           );
         }
-        await sink.close();
-      } catch (error) {
-        await sink.abort();
-        throw error;
       }
+      await sink.close();
+    } catch (error) {
+      await sink.abort();
+      throw error;
     }
     await api(`/api/chunked-download/${payload.downloadId}`, {
       method: 'DELETE',
@@ -587,13 +639,15 @@ async function downloadLegacyFiles(key, lookupKey) {
 
 async function downloadPhoto() {
   setBusy(els.downloadButton, true);
+  let chunkCrypto;
   try {
     const [code] = extractCodes(els.downloadCode.value);
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
     let fileCount;
     try {
-      fileCount = await downloadChunkedFiles(code, key, lookupKey);
+      chunkCrypto = await createChunkCrypto(code);
+      fileCount = await downloadChunkedFiles(key, lookupKey, chunkCrypto);
     } catch (error) {
       if (error.status !== 404 || error.chunkedDownloadStarted) throw error;
       fileCount = await downloadLegacyFiles(key, lookupKey);
@@ -607,6 +661,7 @@ async function downloadPhoto() {
   } catch (error) {
     showToast(error.message);
   } finally {
+    chunkCrypto?.terminate();
     setBusy(els.downloadButton, false);
   }
 }
@@ -644,6 +699,7 @@ function bindDropZone() {
 function init() {
   initPageEffects(createLiquidGlass);
   bindDropZone();
+  cleanupStaleDownloadFiles();
 
   els.uploadButton.addEventListener('click', uploadPhoto);
   els.downloadButton.addEventListener('click', downloadPhoto);

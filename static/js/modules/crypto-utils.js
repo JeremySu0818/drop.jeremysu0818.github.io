@@ -49,32 +49,9 @@ export async function encryptBytes(key, bytes) {
   };
 }
 
-export async function encryptChunkBytes(key, bytes) {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    bytes,
-  );
-  return {
-    iv: bytesToBase64(iv),
-    ciphertext: new Uint8Array(encrypted),
-  };
-}
-
 export async function decryptBytes(key, ivBase64, ciphertextBase64) {
   const iv = base64ToBytes(ivBase64);
   const ciphertext = base64ToBytes(ciphertextBase64);
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    ciphertext,
-  );
-  return new Uint8Array(decrypted);
-}
-
-export async function decryptChunkBytes(key, ivBase64, ciphertext) {
-  const iv = base64ToBytes(ivBase64);
   const decrypted = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv },
     key,
