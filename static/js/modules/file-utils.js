@@ -25,7 +25,7 @@ export function shortenFilename(name, maxLength = 30) {
   return `${displayName.slice(0, maxLength - 3)}...`;
 }
 
-export function downloadBlob(blob, filename) {
+export function downloadBlob(blob, filename, revokeDelayMs = 10 * 60 * 1000) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -33,7 +33,7 @@ export function downloadBlob(blob, filename) {
   document.body.append(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  window.setTimeout(() => URL.revokeObjectURL(url), revokeDelayMs);
 }
 
 export function uniqueZipName(name, usedNames) {
