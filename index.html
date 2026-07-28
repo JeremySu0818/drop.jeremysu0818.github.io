@@ -142,6 +142,43 @@
         </button>
       </dialog>
 
+      <dialog
+        class="glass-card destination-modal"
+        id="downloadDestinationModal"
+        aria-labelledby="downloadDestinationTitle"
+      >
+        <div class="card-head">
+          <span class="icon-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M3 7h7l2 2h9v10H3z" />
+            </svg>
+          </span>
+          <div>
+            <h2 id="downloadDestinationTitle">Save Multiple Files</h2>
+            <p>
+              Choose one folder. Every file will be streamed there separately.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button
+            class="primary-action"
+            id="chooseDirectoryButton"
+            type="button"
+          >
+            Choose Folder
+          </button>
+          <button
+            class="secondary-action"
+            id="cancelDirectoryButton"
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </dialog>
+
       <div class="toast" id="toast" role="status" aria-live="polite" popover="manual"></div>
     </main>
 

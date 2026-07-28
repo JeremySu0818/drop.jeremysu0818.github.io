@@ -27,6 +27,9 @@ const PROGRESS_RENDER_INTERVAL_MS = 120;
 const CHUNK_SIZE_BYTES = 64 * 1024 * 1024;
 const MAX_PARALLEL_CHUNKS = 3;
 const MEMORY_DOWNLOAD_LIMIT = 512 * 1024 * 1024;
+const STALE_DOWNLOAD_FILE_AGE_MS = 24 * 60 * 60 * 1000;
+const RECENT_UPLOAD_STORAGE_KEY = 'drop:recent-upload';
+const DOWNLOAD_CODE_STORAGE_KEY = 'drop:download-code';
 const SERVER_URL = 'https://drop-server.jeremytw.qzz.io';
 
 const els = {
@@ -38,6 +41,11 @@ const els = {
   shareCode: document.querySelector('#shareCode'),
   copyButton: document.querySelector('#copyButton'),
   closeModalButton: document.querySelector('#closeModalButton'),
+  downloadDestinationModal: document.querySelector(
+    '#downloadDestinationModal',
+  ),
+  chooseDirectoryButton: document.querySelector('#chooseDirectoryButton'),
+  cancelDirectoryButton: document.querySelector('#cancelDirectoryButton'),
   downloadCode: document.querySelector('#downloadCode'),
   downloadButton: document.querySelector('#downloadButton'),
   toast: document.querySelector('#toast'),
@@ -46,6 +54,15 @@ const els = {
 const toast = createToastManager(els.toast);
 let selectedFiles = [];
 let activeUploadId = '';
+
+class DownloadCancelledError extends Error {
+  constructor() {
+    super(
+      'Download cancelled. The server copy was not deleted; use the same code to retry.',
+    );
+    this.name = 'DownloadCancelledError';
+  }
+}
 
 function showToast(message, options = {}) {
   toast.show(message, options);
@@ -69,6 +86,116 @@ function extractCodes(value) {
 function setSelectedFiles(files) {
   selectedFiles = filterMediaFiles(files);
   els.fileMeta.textContent = summarizeSelectedFiles(selectedFiles);
+}
+
+function readSessionValue(key) {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionValue(key, value) {
+  try {
+    if (value) sessionStorage.setItem(key, value);
+    else sessionStorage.removeItem(key);
+  } catch {}
+}
+
+function readLocalValue(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalValue(key, value) {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {}
+}
+
+function rememberRecentUpload(code, expiresAt) {
+  writeLocalValue(
+    RECENT_UPLOAD_STORAGE_KEY,
+    JSON.stringify({ code, expiresAt }),
+  );
+}
+
+function restoreSessionState() {
+  els.downloadCode.value = readSessionValue(DOWNLOAD_CODE_STORAGE_KEY) || '';
+
+  const storedUpload = readLocalValue(RECENT_UPLOAD_STORAGE_KEY);
+  if (!storedUpload) return;
+  try {
+    const recentUpload = JSON.parse(storedUpload);
+    if (
+      typeof recentUpload.code !== 'string' ||
+      !Number.isFinite(recentUpload.expiresAt) ||
+      recentUpload.expiresAt <= Date.now()
+    ) {
+      writeLocalValue(RECENT_UPLOAD_STORAGE_KEY, '');
+      return;
+    }
+    els.shareCode.value = recentUpload.code;
+    queueMicrotask(() => {
+      if (!els.codeModal.open) els.codeModal.showModal();
+      showToast('Recovered a recent decryption code from this browser.');
+    });
+  } catch {
+    writeLocalValue(RECENT_UPLOAD_STORAGE_KEY, '');
+  }
+}
+
+function supportsDirectoryDownloads() {
+  return (
+    window.isSecureContext &&
+    typeof window.showDirectoryPicker === 'function'
+  );
+}
+
+function chooseDownloadDirectory() {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      els.chooseDirectoryButton.onclick = null;
+      els.cancelDirectoryButton.onclick = null;
+      els.downloadDestinationModal.oncancel = null;
+      if (els.downloadDestinationModal.open) {
+        els.downloadDestinationModal.close();
+      }
+      callback(value);
+    };
+    const cancel = () => settle(reject, new DownloadCancelledError());
+
+    els.chooseDirectoryButton.onclick = async () => {
+      setBusy(els.chooseDirectoryButton, true);
+      try {
+        const directory = await window.showDirectoryPicker({
+          id: 'drop-downloads',
+          mode: 'readwrite',
+          startIn: 'downloads',
+        });
+        settle(resolve, directory);
+      } catch (error) {
+        if (error?.name === 'AbortError') cancel();
+        else settle(reject, error);
+      } finally {
+        setBusy(els.chooseDirectoryButton, false);
+      }
+    };
+    els.cancelDirectoryButton.onclick = cancel;
+    els.downloadDestinationModal.oncancel = (event) => {
+      event.preventDefault();
+      cancel();
+    };
+    els.downloadDestinationModal.showModal();
+  });
 }
 
 async function api(path, options = {}) {
@@ -328,11 +455,12 @@ async function uploadPhoto() {
           renderProgress(true);
         },
       );
-      await api('/api/chunked-uploads/complete', {
+      const completion = await api('/api/chunked-uploads/complete', {
         method: 'POST',
         body: JSON.stringify({ uploadId }),
       });
       activeUploadId = '';
+      rememberRecentUpload(code, completion.expiresAt);
     } catch (error) {
       if (uploadId) {
         api(`/api/chunked-uploads/${uploadId}`, { method: 'DELETE' }).catch(
@@ -360,7 +488,7 @@ async function createDownloadSink(name, mime, size) {
   if (navigator.storage?.getDirectory) {
     navigator.storage.persist?.().catch(() => {});
     const root = await navigator.storage.getDirectory();
-    const tempName = `drop-${crypto.randomUUID()}`;
+    const tempName = `drop-${Date.now()}-${crypto.randomUUID()}`;
     const handle = await root.getFileHandle(tempName, { create: true });
     const writable = await handle.createWritable();
     return {
@@ -406,7 +534,11 @@ async function cleanupStaleDownloadFiles() {
   try {
     const root = await navigator.storage.getDirectory();
     for await (const [name] of root.entries()) {
-      if (name.startsWith('drop-')) {
+      const match = /^drop-(\d+)-/.exec(name);
+      if (
+        match &&
+        Date.now() - Number(match[1]) >= STALE_DOWNLOAD_FILE_AGE_MS
+      ) {
         await root.removeEntry(name).catch(() => {});
       }
     }
@@ -439,11 +571,22 @@ async function createStreamingZipSink(totalSize) {
   });
 
   return {
-    addFile(name) {
+    async openFile(name) {
       const entry = new AsyncZipDeflate(name, { level: 0 });
       entries.push(entry);
       archive.add(entry);
-      return entry;
+      let closed = false;
+      return {
+        async write(bytes) {
+          if (closed) throw new Error('ZIP entry is already closed.');
+          entry.push(bytes, false);
+        },
+        async close() {
+          if (closed) return;
+          closed = true;
+          entry.push(new Uint8Array(0), true);
+        },
+      };
     },
     async close() {
       archive.end();
@@ -455,6 +598,75 @@ async function createStreamingZipSink(totalSize) {
       for (const entry of entries) entry.terminate?.();
       await output.abort();
     },
+  };
+}
+
+async function directoryEntryExists(directory, name) {
+  try {
+    await directory.getFileHandle(name);
+    return true;
+  } catch (error) {
+    if (error?.name === 'NotFoundError') return false;
+    if (error?.name === 'TypeMismatchError') return true;
+    throw error;
+  }
+}
+
+async function createDirectoryFileSink(directory) {
+  const usedNames = new Set();
+  const activeFiles = new Set();
+
+  return {
+    async openFile(name) {
+      let finalName = uniqueZipName(name, usedNames);
+      while (await directoryEntryExists(directory, finalName)) {
+        finalName = uniqueZipName(name, usedNames);
+      }
+
+      const handle = await directory.getFileHandle(finalName, { create: true });
+      const writable = await handle.createWritable();
+      const activeFile = { name: finalName, writable };
+      activeFiles.add(activeFile);
+      let closed = false;
+
+      return {
+        write: (bytes) => writable.write(bytes),
+        async close() {
+          if (closed) return;
+          await writable.close();
+          closed = true;
+          activeFiles.delete(activeFile);
+        },
+      };
+    },
+    async close() {
+      if (activeFiles.size !== 0) {
+        throw new Error('A destination file is still open.');
+      }
+    },
+    async abort() {
+      await Promise.all(
+        [...activeFiles].map(async ({ name, writable }) => {
+          await writable.abort().catch(() => {});
+          await directory.removeEntry(name).catch(() => {});
+        }),
+      );
+      activeFiles.clear();
+    },
+  };
+}
+
+async function createSingleFileSink(name, mime, size) {
+  const output = await createDownloadSink(name, mime, size);
+  let opened = false;
+  return {
+    async openFile() {
+      if (opened) throw new Error('Single-file destination is already open.');
+      opened = true;
+      return output;
+    },
+    async close() {},
+    abort: () => output.abort(),
   };
 }
 
@@ -480,20 +692,39 @@ async function downloadChunkedFiles(key, lookupKey, chunkCrypto) {
 
     const multipleFiles = files.length > 1;
     const usedNames = new Set();
-    const sink = multipleFiles
-      ? await createStreamingZipSink(totalBytes)
-      : await createDownloadSink(
-          files[0].meta.name || 'drop-file',
-          files[0].meta.mime || 'application/octet-stream',
-          files[0].encryptedFile.size,
-        );
+    let sink;
+    let writesSeparateFiles = false;
+    if (!multipleFiles) {
+      sink = await createSingleFileSink(
+        files[0].meta.name || 'drop-file',
+        files[0].meta.mime || 'application/octet-stream',
+        files[0].encryptedFile.size,
+      );
+    } else if (supportsDirectoryDownloads()) {
+      try {
+        sink = await createDirectoryFileSink(await chooseDownloadDirectory());
+        writesSeparateFiles = true;
+      } catch (error) {
+        if (error instanceof DownloadCancelledError) throw error;
+        showToast('Folder access is unavailable. Downloading a ZIP instead.', {
+          persist: true,
+        });
+        sink = await createStreamingZipSink(totalBytes);
+      }
+    } else {
+      sink = await createStreamingZipSink(totalBytes);
+    }
 
     try {
       for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {
         const { encryptedFile, meta } = files[fileIndex];
-        const zipEntry = multipleFiles
-          ? sink.addFile(uniqueZipName(meta.name || 'drop-file', usedNames))
-          : null;
+        const fileOutput = await sink.openFile(
+          multipleFiles && !writesSeparateFiles
+            ? uniqueZipName(meta.name || 'drop-file', usedNames)
+            : meta.name || 'drop-file',
+          meta.mime || 'application/octet-stream',
+          encryptedFile.size,
+        );
         for (
           let chunkIndex = 0;
           chunkIndex < encryptedFile.chunkCount;
@@ -516,14 +747,7 @@ async function downloadChunkedFiles(key, lookupKey, chunkCrypto) {
           const ciphertext = new Uint8Array(await response.arrayBuffer());
           const plaintext = await chunkCrypto.decrypt(iv, ciphertext);
           const plaintextLength = plaintext.byteLength;
-          if (zipEntry) {
-            zipEntry.push(
-              plaintext,
-              chunkIndex === encryptedFile.chunkCount - 1,
-            );
-          } else {
-            await sink.write(plaintext);
-          }
+          await fileOutput.write(plaintext);
           downloadedBytes += plaintextLength;
           const percent =
             totalBytes === 0
@@ -537,17 +761,23 @@ async function downloadChunkedFiles(key, lookupKey, chunkCrypto) {
             { persist: true },
           );
         }
+        await fileOutput.close();
       }
       await sink.close();
     } catch (error) {
       await sink.abort();
       throw error;
     }
-    await api(`/api/chunked-download/${payload.downloadId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${payload.downloadToken}` },
-    });
-    return payload.files.length;
+    let serverCopyDestroyed = true;
+    try {
+      await api(`/api/chunked-download/${payload.downloadId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${payload.downloadToken}` },
+      });
+    } catch {
+      serverCopyDestroyed = false;
+    }
+    return { fileCount: payload.files.length, serverCopyDestroyed };
   } catch (error) {
     error.chunkedDownloadStarted = true;
     throw error;
@@ -634,7 +864,7 @@ async function downloadLegacyFiles(key, lookupKey) {
       );
     }
 
-    return files.length;
+    return { fileCount: files.length, serverCopyDestroyed: true };
 }
 
 async function downloadPhoto() {
@@ -644,19 +874,25 @@ async function downloadPhoto() {
     const [code] = extractCodes(els.downloadCode.value);
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
-    let fileCount;
+    let result;
     try {
       chunkCrypto = await createChunkCrypto(code);
-      fileCount = await downloadChunkedFiles(key, lookupKey, chunkCrypto);
+      result = await downloadChunkedFiles(key, lookupKey, chunkCrypto);
     } catch (error) {
       if (error.status !== 404 || error.chunkedDownloadStarted) throw error;
-      fileCount = await downloadLegacyFiles(key, lookupKey);
+      result = await downloadLegacyFiles(key, lookupKey);
     }
     els.downloadCode.value = '';
+    writeSessionValue(DOWNLOAD_CODE_STORAGE_KEY, '');
+    const { fileCount, serverCopyDestroyed } = result;
     showToast(
-      fileCount === 1
-        ? 'File downloaded successfully. Server copy destroyed.'
-        : `Successfully downloaded ${fileCount} files. Server copy destroyed.`,
+      serverCopyDestroyed
+        ? fileCount === 1
+          ? 'File downloaded successfully. Server copy destroyed.'
+          : `Successfully downloaded ${fileCount} files. Server copy destroyed.`
+        : fileCount === 1
+          ? 'File saved. Server cleanup could not be confirmed; retry remains possible until expiry.'
+          : `${fileCount} files saved. Server cleanup could not be confirmed; retry remains possible until expiry.`,
     );
   } catch (error) {
     showToast(error.message);
@@ -700,9 +936,13 @@ function init() {
   initPageEffects(createLiquidGlass);
   bindDropZone();
   cleanupStaleDownloadFiles();
+  restoreSessionState();
 
   els.uploadButton.addEventListener('click', uploadPhoto);
   els.downloadButton.addEventListener('click', downloadPhoto);
+  els.downloadCode.addEventListener('input', () => {
+    writeSessionValue(DOWNLOAD_CODE_STORAGE_KEY, els.downloadCode.value);
+  });
   els.copyButton.addEventListener('click', async () => {
     await navigator.clipboard.writeText(els.shareCode.value);
     showToast('Decryption code copied to clipboard.');
