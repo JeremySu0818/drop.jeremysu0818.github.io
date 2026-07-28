@@ -798,7 +798,9 @@ async function downloadChunkedFiles(key, lookupKey, chunkCrypto) {
                   Math.round((downloadedBytes / totalBytes) * 100),
                 );
           showToast(
-            `Downloading file ${fileIndex + 1}/${payload.files.length} (${percent}%)`,
+            multipleFiles && !writesSeparateFiles
+              ? `Downloading ZIP (${percent}%)`
+              : `Downloading file ${fileIndex + 1}/${payload.files.length} (${percent}%)`,
             { persist: true },
           );
         }
