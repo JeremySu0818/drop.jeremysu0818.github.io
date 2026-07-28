@@ -121,8 +121,26 @@ function writeLocalValue(key, value) {
 function rememberRecentUpload(code, expiresAt) {
   writeLocalValue(
     RECENT_UPLOAD_STORAGE_KEY,
-    JSON.stringify({ code, expiresAt }),
+    JSON.stringify({ code, expiresAt, acknowledged: false }),
   );
+}
+
+function acknowledgeRecentUpload() {
+  const storedUpload = readLocalValue(RECENT_UPLOAD_STORAGE_KEY);
+  if (!storedUpload) return;
+  try {
+    const recentUpload = JSON.parse(storedUpload);
+    if (
+      recentUpload.code !== els.shareCode.value ||
+      recentUpload.expiresAt <= Date.now()
+    ) {
+      return;
+    }
+    writeLocalValue(
+      RECENT_UPLOAD_STORAGE_KEY,
+      JSON.stringify({ ...recentUpload, acknowledged: true }),
+    );
+  } catch {}
 }
 
 function restoreSessionState() {
@@ -141,6 +159,7 @@ function restoreSessionState() {
       return;
     }
     els.shareCode.value = recentUpload.code;
+    if (recentUpload.acknowledged !== false) return;
     queueMicrotask(() => {
       if (!els.codeModal.open) els.codeModal.showModal();
       showToast('Recovered a recent decryption code from this browser.');
@@ -967,10 +986,12 @@ function init() {
   });
   els.copyButton.addEventListener('click', async () => {
     await navigator.clipboard.writeText(els.shareCode.value);
+    acknowledgeRecentUpload();
     showToast('Decryption code copied to clipboard.');
   });
 
   els.closeModalButton.addEventListener('click', () => {
+    acknowledgeRecentUpload();
     els.codeModal.close();
     setSelectedFiles([]);
     els.photoInput.value = '';
