@@ -20,9 +20,9 @@ import {
 import { initPageEffects } from './modules/ui-effects.js';
 
 const TTL_MINUTES = 30;
-const MAX_PARALLEL_UPLOADS = 3;
 const PROGRESS_RENDER_INTERVAL_MS = 120;
-const CHUNK_SIZE_BYTES = 8 * 1024 * 1024;
+const CHUNK_SIZE_BYTES = 64 * 1024 * 1024;
+const MAX_PARALLEL_CHUNKS = 3;
 const MEMORY_DOWNLOAD_LIMIT = 512 * 1024 * 1024;
 const SERVER_URL = 'https://drop-server.jeremytw.qzz.io';
 
@@ -42,6 +42,7 @@ const els = {
 
 const toast = createToastManager(els.toast);
 let selectedFiles = [];
+let activeUploadId = '';
 
 function showToast(message, options = {}) {
   toast.show(message, options);
@@ -183,18 +184,6 @@ function downloadJsonWithProgress(path, payload, onProgress) {
   });
 }
 
-function getUploadConcurrency(fileCount) {
-  const connection = navigator.connection;
-  if (
-    connection?.saveData ||
-    ['slow-2g', '2g'].includes(connection?.effectiveType)
-  ) {
-    return 1;
-  }
-
-  return Math.max(1, Math.min(MAX_PARALLEL_UPLOADS, fileCount));
-}
-
 async function eachWithConcurrency(items, concurrency, worker) {
   let nextIndex = 0;
   const workers = Array.from(
@@ -254,9 +243,9 @@ async function uploadPhoto() {
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
     const totalFiles = filesToUpload.length;
-    const concurrency = getUploadConcurrency(totalFiles);
     const totalBytes = filesToUpload.reduce((sum, file) => sum + file.size, 0);
-    const activeBytes = Array(totalFiles).fill(0);
+    const activeChunkBytes = new Map();
+    const remainingChunks = [];
     let completedBytes = 0;
     let completedFiles = 0;
     let lastProgressAt = 0;
@@ -272,7 +261,9 @@ async function uploadPhoto() {
       }
 
       lastProgressAt = currentTime;
-      const transferred = completedBytes + activeBytes.reduce((a, b) => a + b, 0);
+      const transferred =
+        completedBytes +
+        [...activeChunkBytes.values()].reduce((sum, bytes) => sum + bytes, 0);
       const overallPercent = Math.min(
         100,
         totalBytes === 0 ? 100 : Math.round((transferred / totalBytes) * 100),
@@ -299,55 +290,72 @@ async function uploadPhoto() {
       body: JSON.stringify({ lookupKey, files: manifestFiles }),
     });
     uploadId = session.uploadId;
+    activeUploadId = uploadId;
     if (session.chunkSize !== CHUNK_SIZE_BYTES) {
+      await api(`/api/chunked-uploads/${uploadId}`, {
+        method: 'DELETE',
+      }).catch(() => {});
+      activeUploadId = '';
       throw new Error('Server and browser chunk sizes do not match.');
     }
     showToast(`Uploading 0/${totalFiles} (0%)`, { persist: true });
 
     try {
+      const chunkTasks = [];
+      for (let fileIndex = 0; fileIndex < filesToUpload.length; fileIndex += 1) {
+        const file = filesToUpload[fileIndex];
+        const chunkCount = Math.max(
+          1,
+          Math.ceil(file.size / CHUNK_SIZE_BYTES),
+        );
+        remainingChunks[fileIndex] = chunkCount;
+        for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex += 1) {
+          chunkTasks.push({ file, fileIndex, chunkIndex });
+        }
+      }
       await eachWithConcurrency(
-        filesToUpload,
-        concurrency,
-        async (file, fileIndex) => {
+        chunkTasks,
+        MAX_PARALLEL_CHUNKS,
+        async ({ file, fileIndex, chunkIndex }) => {
           const fileId = `f${fileIndex}`;
-          const chunkCount = Math.max(
-            1,
-            Math.ceil(file.size / CHUNK_SIZE_BYTES),
-          );
-          for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex += 1) {
-            const start = chunkIndex * CHUNK_SIZE_BYTES;
-            const end = Math.min(file.size, start + CHUNK_SIZE_BYTES);
-            let sourceBytes;
-            try {
-              sourceBytes = new Uint8Array(
-                await file.slice(start, end).arrayBuffer(),
-              );
-            } catch (error) {
-              const detail =
-                error?.name === 'NotReadableError'
-                  ? 'The browser lost permission to read the source file. Keep it on local storage and select it again.'
-                  : error?.message || 'Unable to read source file.';
-              throw new Error(`${file.name}: ${detail}`);
-            }
-            const encrypted = await encryptChunkBytes(key, sourceBytes);
-            const sourceLength = sourceBytes.byteLength;
-            sourceBytes = null;
-            await uploadBinaryWithProgress(
-              `/api/chunked-uploads/${uploadId}/files/${fileId}/chunks/${chunkIndex}`,
-              encrypted.ciphertext,
-              encrypted.iv,
-              (event) => {
-                activeBytes[fileIndex] = event.total
-                  ? Math.round((event.loaded / event.total) * sourceLength)
-                  : 0;
-                renderProgress();
-              },
+          const progressKey = `${fileIndex}:${chunkIndex}`;
+          const start = chunkIndex * CHUNK_SIZE_BYTES;
+          const end = Math.min(file.size, start + CHUNK_SIZE_BYTES);
+          let sourceBytes;
+          try {
+            sourceBytes = new Uint8Array(
+              await file.slice(start, end).arrayBuffer(),
             );
-            activeBytes[fileIndex] = 0;
-            completedBytes += sourceLength;
-            renderProgress(true);
+          } catch (error) {
+            const detail =
+              error?.name === 'NotReadableError'
+                ? 'The browser lost permission to read the source file. Keep it on local storage and select it again.'
+                : error?.message || 'Unable to read source file.';
+            throw new Error(`${file.name}: ${detail}`);
           }
-          completedFiles += 1;
+          const encrypted = await encryptChunkBytes(key, sourceBytes);
+          const sourceLength = sourceBytes.byteLength;
+          sourceBytes = null;
+          await uploadBinaryWithProgress(
+            `/api/chunked-uploads/${uploadId}/files/${fileId}/chunks/${chunkIndex}`,
+            encrypted.ciphertext,
+            encrypted.iv,
+            (event) => {
+              activeChunkBytes.set(
+                progressKey,
+                event.total
+                  ? Math.round((event.loaded / event.total) * sourceLength)
+                  : 0,
+              );
+              renderProgress();
+            },
+          );
+          activeChunkBytes.delete(progressKey);
+          completedBytes += sourceLength;
+          remainingChunks[fileIndex] -= 1;
+          if (remainingChunks[fileIndex] === 0) {
+            completedFiles += 1;
+          }
           renderProgress(true);
         },
       );
@@ -355,12 +363,14 @@ async function uploadPhoto() {
         method: 'POST',
         body: JSON.stringify({ uploadId }),
       });
+      activeUploadId = '';
     } catch (error) {
       if (uploadId) {
         api(`/api/chunked-uploads/${uploadId}`, { method: 'DELETE' }).catch(
           () => {},
         );
       }
+      activeUploadId = '';
       throw error;
     }
 
@@ -646,6 +656,17 @@ function init() {
     els.codeModal.close();
     setSelectedFiles([]);
     els.photoInput.value = '';
+  });
+
+  window.addEventListener('pagehide', (event) => {
+    if (!activeUploadId || event.persisted) return;
+    const abortUrl = `${SERVER_URL}/api/chunked-uploads/${activeUploadId}/abort`;
+    const beaconQueued =
+      typeof navigator.sendBeacon === 'function' &&
+      navigator.sendBeacon(abortUrl);
+    if (!beaconQueued) {
+      fetch(abortUrl, { method: 'POST', keepalive: true }).catch(() => {});
+    }
   });
 }
 
