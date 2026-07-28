@@ -613,6 +613,28 @@ async function directoryEntryExists(directory, name) {
 }
 
 async function createDirectoryFileSink(directory) {
+  const probeName = `.drop-write-check-${crypto.randomUUID()}`;
+  let probeWriter;
+  try {
+    const permission =
+      typeof directory.queryPermission === 'function'
+        ? await directory.queryPermission({ mode: 'readwrite' })
+        : 'granted';
+    if (permission !== 'granted') {
+      throw new DOMException(
+        'The selected folder is not writable.',
+        'NotAllowedError',
+      );
+    }
+    const probe = await directory.getFileHandle(probeName, { create: true });
+    probeWriter = await probe.createWritable();
+    await probeWriter.close();
+    probeWriter = null;
+  } finally {
+    await probeWriter?.abort().catch(() => {});
+    await directory.removeEntry(probeName).catch(() => {});
+  }
+
   const usedNames = new Set();
   const activeFiles = new Set();
 
