@@ -61,7 +61,7 @@ button {
   width: min(1120px, calc(100% - 32px));
   min-height: 100vh;
   margin: 0 auto;
-  padding: 40px 0;
+  padding: 108px 0 40px;
 }
 
 .brand-strip {
@@ -544,13 +544,15 @@ dialog::backdrop {
 
 /* Glass Header Capsule */
 .glass-header {
-  position: sticky;
+  position: fixed;
   top: 20px;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  margin: 0 auto 32px;
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
   padding: 10px 24px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -726,13 +728,13 @@ dialog::backdrop {
 @media (max-width: 820px) {
   .app-shell {
     width: min(100% - 24px, 620px);
-    padding: 24px 0;
+    padding: 82px 0 24px;
   }
 
   .glass-header {
     top: 12px;
     padding: 8px 14px;
-    margin-bottom: 24px;
+    width: min(100% - 24px, 620px);
   }
 
   .header-brand {
