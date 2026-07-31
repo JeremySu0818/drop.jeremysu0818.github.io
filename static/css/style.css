@@ -373,18 +373,7 @@ textarea {
   font-weight: 800;
 }
 
-.share-link-note {
-  margin-top: 10px;
-  font-size: 0.78rem;
-  line-height: 1.45;
-}
 
-.share-link-note code {
-  padding: 1px 4px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.34);
-  color: var(--text);
-}
 
 .share-actions {
   margin-top: 18px;

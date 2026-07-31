@@ -578,9 +578,19 @@ function init() {
     }
   });
 
+  const supportsWebShare = typeof navigator.share === 'function';
+  if (!supportsWebShare && els.shareButton) {
+    const shareActions = els.shareButton.closest('.share-actions');
+    if (shareActions) {
+      shareActions.style.display = 'none';
+    } else {
+      els.shareButton.style.display = 'none';
+    }
+  }
+
   els.shareButton.addEventListener('click', async () => {
     try {
-      if (typeof navigator.share === 'function') {
+      if (supportsWebShare) {
         await navigator.share({
           title: 'Secure file download',
           text: 'Open this secure link to decrypt and download the shared file.',
