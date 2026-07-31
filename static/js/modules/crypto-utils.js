@@ -3,7 +3,7 @@ export function bytesToBase64(bytes) {
   for (let i = 0; i < bytes.length; i += 0x8000) {
     chunks.push(String.fromCharCode(...bytes.subarray(i, i + 0x8000)));
   }
-  return btoa(chunks.join(''));
+  return btoa(chunks.join(""));
 }
 
 export function base64ToBytes(base64) {
@@ -16,7 +16,7 @@ export function base64ToBytes(base64) {
 }
 
 export function bytesToHex(bytes) {
-  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export function textBytes(value) {
@@ -24,22 +24,22 @@ export function textBytes(value) {
 }
 
 export async function sha256Bytes(value) {
-  const bytes = typeof value === 'string' ? textBytes(value) : value;
-  return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+  const bytes = typeof value === "string" ? textBytes(value) : value;
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
 }
 
 export async function keyFromCode(code) {
   const digest = await sha256Bytes(code);
-  return crypto.subtle.importKey('raw', digest, 'AES-GCM', false, [
-    'encrypt',
-    'decrypt',
+  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, [
+    "encrypt",
+    "decrypt",
   ]);
 }
 
 export async function encryptBytes(key, bytes) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
+    { name: "AES-GCM", iv },
     key,
     bytes,
   );
@@ -53,7 +53,7 @@ export async function decryptBytes(key, ivBase64, ciphertextBase64) {
   const iv = base64ToBytes(ivBase64);
   const ciphertext = base64ToBytes(ciphertextBase64);
   const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
+    { name: "AES-GCM", iv },
     key,
     ciphertext,
   );

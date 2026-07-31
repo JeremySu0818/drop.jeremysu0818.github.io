@@ -1,61 +1,59 @@
-import { createLiquidGlass } from 'https://esm.sh/solid-glass@0.0.3/engines/svg-refraction';
+import { createLiquidGlass } from "https://esm.sh/solid-glass@0.0.3/engines/svg-refraction";
 import {
   encryptBytes,
   keyFromCode,
   lookupKeyFromCode,
   textBytes,
-} from './modules/crypto-utils.js';
-import { createChunkCrypto } from './modules/chunk-crypto-client.js';
+} from "./modules/crypto-utils.js";
+import { createChunkCrypto } from "./modules/chunk-crypto-client.js";
 import {
   createDownloadManager,
   DownloadCancelledError,
-} from './modules/download-manager.js';
+} from "./modules/download-manager.js";
 import {
   createShortShareUrl,
   createShortToken,
   shortTokenToShareCode,
-} from './modules/share-link.js';
+} from "./modules/share-link.js";
 import {
   createToastManager,
   filterMediaFiles,
   setBusy,
   summarizeSelectedFiles,
-} from './modules/ui-utils.js';
-import { initPageEffects } from './modules/ui-effects.js';
+} from "./modules/ui-utils.js";
+import { initPageEffects } from "./modules/ui-effects.js";
 
 const TTL_MINUTES = 30;
 const PROGRESS_RENDER_INTERVAL_MS = 120;
 const CHUNK_SIZE_BYTES = 64 * 1024 * 1024;
 const MAX_PARALLEL_CHUNKS = 3;
-const RECENT_UPLOAD_STORAGE_KEY = 'drop:recent-upload';
-const DOWNLOAD_CODE_STORAGE_KEY = 'drop:download-code';
-const SERVER_URL = 'https://drop-server.jeremytw.qzz.io';
+const RECENT_UPLOAD_STORAGE_KEY = "drop:recent-upload";
+const DOWNLOAD_CODE_STORAGE_KEY = "drop:download-code";
+const SERVER_URL = "https://drop-server.jeremytw.qzz.io";
 
 const els = {
-  photoInput: document.querySelector('#photoInput'),
-  dropZone: document.querySelector('#dropZone'),
-  fileMeta: document.querySelector('#fileMeta'),
-  uploadButton: document.querySelector('#uploadButton'),
-  codeModal: document.querySelector('#codeModal'),
-  shareCode: document.querySelector('#shareCode'),
-  shareLink: document.querySelector('#shareLink'),
-  copyLinkButton: document.querySelector('#copyLinkButton'),
-  shareButton: document.querySelector('#shareButton'),
-  copyCodeButton: document.querySelector('#copyCodeButton'),
-  closeModalButton: document.querySelector('#closeModalButton'),
-  downloadDestinationModal: document.querySelector(
-    '#downloadDestinationModal',
-  ),
-  chooseDirectoryButton: document.querySelector('#chooseDirectoryButton'),
-  cancelDirectoryButton: document.querySelector('#cancelDirectoryButton'),
-  downloadCode: document.querySelector('#downloadCode'),
-  downloadButton: document.querySelector('#downloadButton'),
-  toast: document.querySelector('#toast'),
+  photoInput: document.querySelector("#photoInput"),
+  dropZone: document.querySelector("#dropZone"),
+  fileMeta: document.querySelector("#fileMeta"),
+  uploadButton: document.querySelector("#uploadButton"),
+  codeModal: document.querySelector("#codeModal"),
+  shareCode: document.querySelector("#shareCode"),
+  shareLink: document.querySelector("#shareLink"),
+  copyLinkButton: document.querySelector("#copyLinkButton"),
+  shareButton: document.querySelector("#shareButton"),
+  copyCodeButton: document.querySelector("#copyCodeButton"),
+  closeModalButton: document.querySelector("#closeModalButton"),
+  downloadDestinationModal: document.querySelector("#downloadDestinationModal"),
+  chooseDirectoryButton: document.querySelector("#chooseDirectoryButton"),
+  cancelDirectoryButton: document.querySelector("#cancelDirectoryButton"),
+  downloadCode: document.querySelector("#downloadCode"),
+  downloadButton: document.querySelector("#downloadButton"),
+  toast: document.querySelector("#toast"),
 };
 
 const toast = createToastManager(els.toast);
 let selectedFiles = [];
-let activeUploadId = '';
+let activeUploadId = "";
 
 function showToast(message, options = {}) {
   toast.show(message, options);
@@ -68,7 +66,7 @@ const downloadManager = createDownloadManager({
 });
 
 function getShareReceiverUrl() {
-  return new URL('r/', new URL('.', window.location.href));
+  return new URL("r/", new URL(".", window.location.href));
 }
 
 function setShareDetails(code, shortToken) {
@@ -82,27 +80,27 @@ async function copyText(value) {
     return;
   }
 
-  const fallback = document.createElement('textarea');
+  const fallback = document.createElement("textarea");
   fallback.value = value;
-  fallback.setAttribute('readonly', '');
-  fallback.style.position = 'fixed';
-  fallback.style.opacity = '0';
+  fallback.setAttribute("readonly", "");
+  fallback.style.position = "fixed";
+  fallback.style.opacity = "0";
   document.body.append(fallback);
   fallback.select();
-  const copied = document.execCommand('copy');
+  const copied = document.execCommand("copy");
   fallback.remove();
-  if (!copied) throw new Error('Unable to access the clipboard.');
+  if (!copied) throw new Error("Unable to access the clipboard.");
 }
 
 function extractCodes(value) {
-  const normalized = String(value || '').replaceAll('SHA-256:', '');
+  const normalized = String(value || "").replaceAll("SHA-256:", "");
   const codes = normalized.match(/\b[a-fA-F0-9]{64}\b/g) || [];
   const uniqueCodes = [...new Set(codes.map((code) => code.toLowerCase()))];
   if (uniqueCodes.length === 0) {
-    throw new Error('Invalid decryption code format.');
+    throw new Error("Invalid decryption code format.");
   }
   if (uniqueCodes.length > 1) {
-    throw new Error('Only one decryption code is supported per download.');
+    throw new Error("Only one decryption code is supported per download.");
   }
   return uniqueCodes;
 }
@@ -168,7 +166,7 @@ function acknowledgeRecentUpload() {
 }
 
 function openCodeModal() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: "smooth" });
   if (els.codeModal) {
     els.codeModal.scrollTop = 0;
     if (!els.codeModal.open) {
@@ -178,29 +176,29 @@ function openCodeModal() {
 }
 
 function restoreSessionState() {
-  els.downloadCode.value = readSessionValue(DOWNLOAD_CODE_STORAGE_KEY) || '';
+  els.downloadCode.value = readSessionValue(DOWNLOAD_CODE_STORAGE_KEY) || "";
 
   const storedUpload = readLocalValue(RECENT_UPLOAD_STORAGE_KEY);
   if (!storedUpload) return;
   try {
     const recentUpload = JSON.parse(storedUpload);
     if (
-      typeof recentUpload.code !== 'string' ||
-      typeof recentUpload.shortToken !== 'string' ||
+      typeof recentUpload.code !== "string" ||
+      typeof recentUpload.shortToken !== "string" ||
       !Number.isFinite(recentUpload.expiresAt) ||
       recentUpload.expiresAt <= Date.now()
     ) {
-      writeLocalValue(RECENT_UPLOAD_STORAGE_KEY, '');
+      writeLocalValue(RECENT_UPLOAD_STORAGE_KEY, "");
       return;
     }
     setShareDetails(recentUpload.code, recentUpload.shortToken);
     if (recentUpload.acknowledged !== false) return;
     queueMicrotask(() => {
       openCodeModal();
-      showToast('Recovered a recent secure share link from this browser.');
+      showToast("Recovered a recent secure share link from this browser.");
     });
   } catch {
-    writeLocalValue(RECENT_UPLOAD_STORAGE_KEY, '');
+    writeLocalValue(RECENT_UPLOAD_STORAGE_KEY, "");
   }
 }
 
@@ -224,13 +222,13 @@ function chooseDownloadDirectory() {
       setBusy(els.chooseDirectoryButton, true);
       try {
         const directory = await window.showDirectoryPicker({
-          id: 'drop-downloads',
-          mode: 'readwrite',
-          startIn: 'downloads',
+          id: "drop-downloads",
+          mode: "readwrite",
+          startIn: "downloads",
         });
         settle(resolve, directory);
       } catch (error) {
-        if (error?.name === 'AbortError') cancel();
+        if (error?.name === "AbortError") cancel();
         else settle(reject, error);
       } finally {
         setBusy(els.chooseDirectoryButton, false);
@@ -249,14 +247,14 @@ async function api(path, options = {}) {
   const response = await fetch(`${SERVER_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.headers || {}),
     },
   });
   const body = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const error = new Error(body.error || 'Server response failed.');
+    const error = new Error(body.error || "Server response failed.");
     error.status = response.status;
     throw error;
   }
@@ -267,18 +265,18 @@ async function api(path, options = {}) {
 function uploadBinaryWithProgress(path, bytes, iv, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('PUT', `${SERVER_URL}${path}`);
-    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-    xhr.setRequestHeader('X-Chunk-IV', iv);
+    xhr.open("PUT", `${SERVER_URL}${path}`);
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.setRequestHeader("X-Chunk-IV", iv);
     xhr.upload.onprogress = onProgress;
-    xhr.onerror = () => reject(new Error('Network error while uploading.'));
+    xhr.onerror = () => reject(new Error("Network error while uploading."));
     xhr.onload = () => {
       let body = {};
       try {
-        body = JSON.parse(xhr.responseText || '{}');
+        body = JSON.parse(xhr.responseText || "{}");
       } catch {}
       if (xhr.status < 200 || xhr.status >= 300) {
-        const error = new Error(body.error || 'Server response failed.');
+        const error = new Error(body.error || "Server response failed.");
         error.status = xhr.status;
         reject(error);
         return;
@@ -308,8 +306,8 @@ async function eachWithConcurrency(items, concurrency, worker) {
 async function createEncryptedMetadata(file, key) {
   const metaBytes = textBytes(
     JSON.stringify({
-      name: file.name || 'drop-file',
-      mime: file.type || 'application/octet-stream',
+      name: file.name || "drop-file",
+      mime: file.type || "application/octet-stream",
       size: file.size,
     }),
   );
@@ -327,9 +325,9 @@ async function verifyFileReadable(file) {
     await file.slice(0, Math.min(1, file.size)).arrayBuffer();
   } catch (error) {
     const reason =
-      error?.name === 'NotReadableError'
-        ? 'The browser lost permission to read it. Choose the file again from local storage and keep it there until the upload finishes.'
-        : error?.message || 'The file could not be read.';
+      error?.name === "NotReadableError"
+        ? "The browser lost permission to read it. Choose the file again from local storage and keep it there until the upload finishes."
+        : error?.message || "The file could not be read.";
     throw new Error(`${file.name}: ${reason}`);
   }
 }
@@ -350,8 +348,8 @@ async function reserveUploadSession(files) {
           ...(await createEncryptedMetadata(file, key)),
         })),
       );
-      const session = await api('/api/chunked-uploads', {
-        method: 'POST',
+      const session = await api("/api/chunked-uploads", {
+        method: "POST",
         body: JSON.stringify({ lookupKey, files: manifestFiles }),
       });
       return { code, session, shortToken, uploadCrypto };
@@ -364,15 +362,15 @@ async function reserveUploadSession(files) {
 
 async function uploadPhoto() {
   if (selectedFiles.length === 0) {
-    showToast('Please select files to upload first.');
+    showToast("Please select files to upload first.");
     return;
   }
 
   setBusy(els.uploadButton, true);
   let chunkCrypto;
   try {
-    els.shareCode.value = '';
-    els.shareLink.value = '';
+    els.shareCode.value = "";
+    els.shareLink.value = "";
     const filesToUpload = selectedFiles.slice();
     const totalFiles = filesToUpload.length;
     const totalBytes = filesToUpload.reduce((sum, file) => sum + file.size, 0);
@@ -381,7 +379,7 @@ async function uploadPhoto() {
     let completedBytes = 0;
     let completedFiles = 0;
     let lastProgressAt = 0;
-    let uploadId = '';
+    let uploadId = "";
 
     const renderProgress = (force = false) => {
       const currentTime = Date.now();
@@ -407,9 +405,9 @@ async function uploadPhoto() {
       );
     };
 
-    showToast('Checking file access...', { persist: true });
+    showToast("Checking file access...", { persist: true });
     await Promise.all(filesToUpload.map(verifyFileReadable));
-    showToast('Preparing a secure share link...', { persist: true });
+    showToast("Preparing a secure share link...", { persist: true });
     const reserved = await reserveUploadSession(filesToUpload);
     const { code, session, shortToken } = reserved;
     chunkCrypto = reserved.uploadCrypto;
@@ -417,21 +415,22 @@ async function uploadPhoto() {
     activeUploadId = uploadId;
     if (session.chunkSize !== CHUNK_SIZE_BYTES) {
       await api(`/api/chunked-uploads/${uploadId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       }).catch(() => {});
-      activeUploadId = '';
-      throw new Error('Server and browser chunk sizes do not match.');
+      activeUploadId = "";
+      throw new Error("Server and browser chunk sizes do not match.");
     }
     showToast(`Uploading 0/${totalFiles} (0%)`, { persist: true });
 
     try {
       const chunkTasks = [];
-      for (let fileIndex = 0; fileIndex < filesToUpload.length; fileIndex += 1) {
+      for (
+        let fileIndex = 0;
+        fileIndex < filesToUpload.length;
+        fileIndex += 1
+      ) {
         const file = filesToUpload[fileIndex];
-        const chunkCount = Math.max(
-          1,
-          Math.ceil(file.size / CHUNK_SIZE_BYTES),
-        );
+        const chunkCount = Math.max(1, Math.ceil(file.size / CHUNK_SIZE_BYTES));
         remainingChunks[fileIndex] = chunkCount;
         for (let chunkIndex = 0; chunkIndex < chunkCount; chunkIndex += 1) {
           chunkTasks.push({ file, fileIndex, chunkIndex });
@@ -452,9 +451,9 @@ async function uploadPhoto() {
             );
           } catch (error) {
             const detail =
-              error?.name === 'NotReadableError'
-                ? 'The browser lost permission to read the source file. Keep it on local storage and select it again.'
-                : error?.message || 'Unable to read source file.';
+              error?.name === "NotReadableError"
+                ? "The browser lost permission to read the source file. Keep it on local storage and select it again."
+                : error?.message || "Unable to read source file.";
             throw new Error(`${file.name}: ${detail}`);
           }
           const sourceLength = sourceBytes.byteLength;
@@ -483,21 +482,21 @@ async function uploadPhoto() {
           renderProgress(true);
         },
       );
-      const completion = await api('/api/chunked-uploads/complete', {
-        method: 'POST',
+      const completion = await api("/api/chunked-uploads/complete", {
+        method: "POST",
         body: JSON.stringify({ uploadId }),
       });
-      activeUploadId = '';
+      activeUploadId = "";
       rememberRecentUpload(code, shortToken, completion.expiresAt);
 
       setShareDetails(code, shortToken);
     } catch (error) {
       if (uploadId) {
-        api(`/api/chunked-uploads/${uploadId}`, { method: 'DELETE' }).catch(
+        api(`/api/chunked-uploads/${uploadId}`, { method: "DELETE" }).catch(
           () => {},
         );
       }
-      activeUploadId = '';
+      activeUploadId = "";
       throw error;
     }
 
@@ -518,17 +517,20 @@ async function downloadPhoto() {
   try {
     const [code] = extractCodes(els.downloadCode.value);
     const result = await downloadManager.downloadFiles(code);
-    els.downloadCode.value = '';
-    writeSessionValue(DOWNLOAD_CODE_STORAGE_KEY, '');
+    els.downloadCode.value = "";
+    writeSessionValue(DOWNLOAD_CODE_STORAGE_KEY, "");
     const { fileCount, serverCopyDestroyed } = result;
     showToast(
       serverCopyDestroyed
         ? fileCount === 1
-          ? 'File downloaded successfully. Server copy destroyed.'
-          : 'Successfully downloaded ' + fileCount + ' files. Server copy destroyed.'
+          ? "File downloaded successfully. Server copy destroyed."
+          : "Successfully downloaded " +
+            fileCount +
+            " files. Server copy destroyed."
         : fileCount === 1
-          ? 'File saved. Server cleanup could not be confirmed; retry remains possible until expiry.'
-          : fileCount + ' files saved. Server cleanup could not be confirmed; retry remains possible until expiry.',
+          ? "File saved. Server cleanup could not be confirmed; retry remains possible until expiry."
+          : fileCount +
+            " files saved. Server cleanup could not be confirmed; retry remains possible until expiry.",
     );
   } catch (error) {
     showToast(error.message);
@@ -538,28 +540,28 @@ async function downloadPhoto() {
 }
 
 function bindDropZone() {
-  els.photoInput.addEventListener('change', () => {
+  els.photoInput.addEventListener("change", () => {
     setSelectedFiles([...els.photoInput.files]);
   });
 
-  for (const eventName of ['dragenter', 'dragover']) {
+  for (const eventName of ["dragenter", "dragover"]) {
     els.dropZone.addEventListener(eventName, (event) => {
       event.preventDefault();
-      els.dropZone.classList.add('is-dragging');
+      els.dropZone.classList.add("is-dragging");
     });
   }
 
-  for (const eventName of ['dragleave', 'drop']) {
+  for (const eventName of ["dragleave", "drop"]) {
     els.dropZone.addEventListener(eventName, (event) => {
       event.preventDefault();
-      els.dropZone.classList.remove('is-dragging');
+      els.dropZone.classList.remove("is-dragging");
     });
   }
 
-  els.dropZone.addEventListener('drop', (event) => {
+  els.dropZone.addEventListener("drop", (event) => {
     const files = filterMediaFiles([...event.dataTransfer.files]);
     if (files.length === 0) {
-      showToast('Please drag and drop valid files.');
+      showToast("Please drag and drop valid files.");
       return;
     }
 
@@ -573,79 +575,79 @@ function init() {
   downloadManager.cleanupStaleDownloadFiles();
   restoreSessionState();
 
-  els.uploadButton.addEventListener('click', uploadPhoto);
-  els.downloadButton.addEventListener('click', downloadPhoto);
-  els.downloadCode.addEventListener('input', () => {
+  els.uploadButton.addEventListener("click", uploadPhoto);
+  els.downloadButton.addEventListener("click", downloadPhoto);
+  els.downloadCode.addEventListener("input", () => {
     writeSessionValue(DOWNLOAD_CODE_STORAGE_KEY, els.downloadCode.value);
   });
-  els.copyLinkButton.addEventListener('click', async () => {
+  els.copyLinkButton.addEventListener("click", async () => {
     try {
       await copyText(els.shareLink.value);
       acknowledgeRecentUpload();
-      showToast('Secure share link copied to clipboard.');
+      showToast("Secure share link copied to clipboard.");
     } catch (error) {
       showToast(error.message);
     }
   });
 
-  const supportsWebShare = typeof navigator.share === 'function';
+  const supportsWebShare = typeof navigator.share === "function";
   if (!supportsWebShare && els.shareButton) {
-    const shareActions = els.shareButton.closest('.share-actions');
+    const shareActions = els.shareButton.closest(".share-actions");
     if (shareActions) {
-      shareActions.style.display = 'none';
+      shareActions.style.display = "none";
     } else {
-      els.shareButton.style.display = 'none';
+      els.shareButton.style.display = "none";
     }
   }
 
-  els.shareButton.addEventListener('click', async () => {
+  els.shareButton.addEventListener("click", async () => {
     try {
       if (supportsWebShare) {
         await navigator.share({
-          title: 'Secure file download',
-          text: 'Open this secure link to decrypt and download the shared file.',
+          title: "Secure file download",
+          text: "Open this secure link to decrypt and download the shared file.",
           url: els.shareLink.value,
         });
         acknowledgeRecentUpload();
-        showToast('Secure link ready to share.');
+        showToast("Secure link ready to share.");
         return;
       }
 
       await copyText(els.shareLink.value);
       acknowledgeRecentUpload();
-      showToast('Secure share link copied to clipboard.');
+      showToast("Secure share link copied to clipboard.");
     } catch (error) {
-      if (error?.name !== 'AbortError') {
-        showToast('Unable to share the link. Please copy it instead.');
+      if (error?.name !== "AbortError") {
+        showToast("Unable to share the link. Please copy it instead.");
       }
     }
   });
 
-  els.copyCodeButton.addEventListener('click', async () => {
+  els.copyCodeButton.addEventListener("click", async () => {
     try {
       await copyText(els.shareCode.value);
       acknowledgeRecentUpload();
-      showToast('Decryption code copied to clipboard.');
+      showToast("Decryption code copied to clipboard.");
     } catch (error) {
       showToast(error.message);
     }
   });
 
-  els.closeModalButton.addEventListener('click', () => {
+  els.closeModalButton.addEventListener("click", () => {
     acknowledgeRecentUpload();
     els.codeModal.close();
     setSelectedFiles([]);
-    els.photoInput.value = '';
+    els.photoInput.value = "";
   });
 
-  window.addEventListener('pagehide', (event) => {
+  window.addEventListener("pagehide", (event) => {
     if (!activeUploadId || event.persisted) return;
     const abortUrl = `${SERVER_URL}/api/chunked-uploads/${activeUploadId}/abort`;
     const beaconQueued =
-      typeof navigator.sendBeacon === 'function' &&
+      typeof navigator.sendBeacon === "function" &&
       navigator.sendBeacon(abortUrl);
     if (!beaconQueued) {
-      fetch(abortUrl, { method: 'POST', keepalive: true }).catch(() => {});
+      fetch(abortUrl, { method: "POST", keepalive: true }).catch(() => {});
     }
   });
 }

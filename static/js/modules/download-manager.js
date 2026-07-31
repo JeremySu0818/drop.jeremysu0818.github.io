@@ -1,15 +1,11 @@
-import {
-  AsyncZipDeflate,
-  Zip,
-  zip,
-} from 'https://esm.sh/fflate@0.8.2';
+import { AsyncZipDeflate, Zip, zip } from "https://esm.sh/fflate@0.8.2";
 import {
   decryptBytes,
   keyFromCode,
   lookupKeyFromCode,
-} from './crypto-utils.js';
-import { createChunkCrypto } from './chunk-crypto-client.js';
-import { downloadBlob, uniqueZipName } from './file-utils.js';
+} from "./crypto-utils.js";
+import { createChunkCrypto } from "./chunk-crypto-client.js";
+import { downloadBlob, uniqueZipName } from "./file-utils.js";
 
 const MEMORY_DOWNLOAD_LIMIT = 512 * 1024 * 1024;
 const STALE_DOWNLOAD_FILE_AGE_MS = 24 * 60 * 60 * 1000;
@@ -17,9 +13,9 @@ const STALE_DOWNLOAD_FILE_AGE_MS = 24 * 60 * 60 * 1000;
 export class DownloadCancelledError extends Error {
   constructor() {
     super(
-      'Download cancelled. The server copy was not deleted; use the same link to retry.',
+      "Download cancelled. The server copy was not deleted; use the same link to retry.",
     );
-    this.name = 'DownloadCancelledError';
+    this.name = "DownloadCancelledError";
   }
 }
 
@@ -29,21 +25,21 @@ export function createDownloadManager({
   chooseDirectory,
 }) {
   if (!serverUrl) {
-    throw new Error('A download server URL is required.');
+    throw new Error("A download server URL is required.");
   }
 
   async function api(path, options = {}) {
     const response = await fetch(serverUrl + path, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(options.headers || {}),
       },
     });
     const body = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const error = new Error(body.error || 'Server response failed.');
+      const error = new Error(body.error || "Server response failed.");
       error.status = response.status;
       throw error;
     }
@@ -54,29 +50,29 @@ export function createDownloadManager({
   function downloadJsonWithProgress(path, payload, onProgress) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', serverUrl + path);
-      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.open("POST", serverUrl + path);
+      xhr.setRequestHeader("Content-Type", "application/json");
 
       xhr.onprogress = (event) => {
-        if (typeof onProgress === 'function') {
+        if (typeof onProgress === "function") {
           onProgress(event);
         }
       };
 
       xhr.onerror = () => {
-        reject(new Error('Network error while downloading.'));
+        reject(new Error("Network error while downloading."));
       };
 
       xhr.onload = () => {
         let body = {};
         try {
-          body = JSON.parse(xhr.responseText || '{}');
+          body = JSON.parse(xhr.responseText || "{}");
         } catch {
           body = {};
         }
 
         if (xhr.status < 200 || xhr.status >= 300) {
-          const error = new Error(body.error || 'Server response failed.');
+          const error = new Error(body.error || "Server response failed.");
           error.status = xhr.status;
           reject(error);
           return;
@@ -91,8 +87,7 @@ export function createDownloadManager({
 
   function supportsDirectoryDownloads() {
     return (
-      window.isSecureContext &&
-      typeof window.showDirectoryPicker === 'function'
+      window.isSecureContext && typeof window.showDirectoryPicker === "function"
     );
   }
 
@@ -100,7 +95,7 @@ export function createDownloadManager({
     if (navigator.storage?.getDirectory) {
       navigator.storage.persist?.().catch(() => {});
       const root = await navigator.storage.getDirectory();
-      const tempName = 'drop-' + Date.now() + '-' + crypto.randomUUID();
+      const tempName = "drop-" + Date.now() + "-" + crypto.randomUUID();
       const handle = await root.getFileHandle(tempName, { create: true });
       const writable = await handle.createWritable();
       return {
@@ -124,7 +119,7 @@ export function createDownloadManager({
 
     if (size > MEMORY_DOWNLOAD_LIMIT) {
       throw new Error(
-        'This browser cannot stream large downloads to local storage. Use a current Chromium, Safari, or Firefox version.',
+        "This browser cannot stream large downloads to local storage. Use a current Chromium, Safari, or Firefox version.",
       );
     }
     const parts = [];
@@ -159,8 +154,8 @@ export function createDownloadManager({
 
   async function createStreamingZipSink(totalSize) {
     const output = await createDownloadSink(
-      'drop-files.zip',
-      'application/zip',
+      "drop-files.zip",
+      "application/zip",
       totalSize + 1024 * 1024,
     );
     const entries = [];
@@ -190,7 +185,7 @@ export function createDownloadManager({
         let closed = false;
         return {
           async write(bytes) {
-            if (closed) throw new Error('ZIP entry is already closed.');
+            if (closed) throw new Error("ZIP entry is already closed.");
             entry.push(bytes, false);
           },
           async close() {
@@ -218,24 +213,24 @@ export function createDownloadManager({
       await directory.getFileHandle(name);
       return true;
     } catch (error) {
-      if (error?.name === 'NotFoundError') return false;
-      if (error?.name === 'TypeMismatchError') return true;
+      if (error?.name === "NotFoundError") return false;
+      if (error?.name === "TypeMismatchError") return true;
       throw error;
     }
   }
 
   async function createDirectoryFileSink(directory) {
-    const probeName = '.drop-write-check-' + crypto.randomUUID();
+    const probeName = ".drop-write-check-" + crypto.randomUUID();
     let probeWriter;
     try {
       const permission =
-        typeof directory.queryPermission === 'function'
-          ? await directory.queryPermission({ mode: 'readwrite' })
-          : 'granted';
-      if (permission !== 'granted') {
+        typeof directory.queryPermission === "function"
+          ? await directory.queryPermission({ mode: "readwrite" })
+          : "granted";
+      if (permission !== "granted") {
         throw new DOMException(
-          'The selected folder is not writable.',
-          'NotAllowedError',
+          "The selected folder is not writable.",
+          "NotAllowedError",
         );
       }
       const probe = await directory.getFileHandle(probeName, { create: true });
@@ -257,7 +252,9 @@ export function createDownloadManager({
           finalName = uniqueZipName(name, usedNames);
         }
 
-        const handle = await directory.getFileHandle(finalName, { create: true });
+        const handle = await directory.getFileHandle(finalName, {
+          create: true,
+        });
         const writable = await handle.createWritable();
         const activeFile = { name: finalName, writable };
         activeFiles.add(activeFile);
@@ -275,7 +272,7 @@ export function createDownloadManager({
       },
       async close() {
         if (activeFiles.size !== 0) {
-          throw new Error('A destination file is still open.');
+          throw new Error("A destination file is still open.");
         }
       },
       async abort() {
@@ -295,7 +292,7 @@ export function createDownloadManager({
     let opened = false;
     return {
       async openFile() {
-        if (opened) throw new Error('Single-file destination is already open.');
+        if (opened) throw new Error("Single-file destination is already open.");
         opened = true;
         return output;
       },
@@ -305,8 +302,8 @@ export function createDownloadManager({
   }
 
   async function downloadChunkedFiles(key, lookupKey, chunkCrypto) {
-    const payload = await api('/api/chunked-download', {
-      method: 'POST',
+    const payload = await api("/api/chunked-download", {
+      method: "POST",
       body: JSON.stringify({ lookupKey }),
     });
     const totalBytes = payload.files.reduce((sum, file) => sum + file.size, 0);
@@ -330,8 +327,8 @@ export function createDownloadManager({
       let writesSeparateFiles = false;
       if (!multipleFiles) {
         sink = await createSingleFileSink(
-          files[0].meta.name || 'drop-file',
-          files[0].meta.mime || 'application/octet-stream',
+          files[0].meta.name || "drop-file",
+          files[0].meta.mime || "application/octet-stream",
           files[0].encryptedFile.size,
         );
       } else if (supportsDirectoryDownloads() && chooseDirectory) {
@@ -340,9 +337,12 @@ export function createDownloadManager({
           writesSeparateFiles = true;
         } catch (error) {
           if (error instanceof DownloadCancelledError) throw error;
-          showToast('Folder access is unavailable. Downloading a ZIP instead.', {
-            persist: true,
-          });
+          showToast(
+            "Folder access is unavailable. Downloading a ZIP instead.",
+            {
+              persist: true,
+            },
+          );
           sink = await createStreamingZipSink(totalBytes);
         }
       } else {
@@ -354,9 +354,9 @@ export function createDownloadManager({
           const { encryptedFile, meta } = files[fileIndex];
           const fileOutput = await sink.openFile(
             multipleFiles && !writesSeparateFiles
-              ? uniqueZipName(meta.name || 'drop-file', usedNames)
-              : meta.name || 'drop-file',
-            meta.mime || 'application/octet-stream',
+              ? uniqueZipName(meta.name || "drop-file", usedNames)
+              : meta.name || "drop-file",
+            meta.mime || "application/octet-stream",
             encryptedFile.size,
           );
           for (
@@ -366,24 +366,26 @@ export function createDownloadManager({
           ) {
             const response = await fetch(
               serverUrl +
-                '/api/chunked-download/' +
+                "/api/chunked-download/" +
                 payload.downloadId +
-                '/files/' +
+                "/files/" +
                 encryptedFile.id +
-                '/chunks/' +
+                "/chunks/" +
                 chunkIndex,
               {
                 headers: {
-                  Authorization: 'Bearer ' + payload.downloadToken,
+                  Authorization: "Bearer " + payload.downloadToken,
                 },
               },
             );
             if (!response.ok) {
               const body = await response.json().catch(() => ({}));
-              throw new Error(body.error || 'Unable to download encrypted chunk.');
+              throw new Error(
+                body.error || "Unable to download encrypted chunk.",
+              );
             }
-            const iv = response.headers.get('X-Chunk-IV');
-            if (!iv) throw new Error('Encrypted chunk IV is missing.');
+            const iv = response.headers.get("X-Chunk-IV");
+            if (!iv) throw new Error("Encrypted chunk IV is missing.");
             const ciphertext = new Uint8Array(await response.arrayBuffer());
             const plaintext = await chunkCrypto.decrypt(iv, ciphertext);
             const plaintextLength = plaintext.byteLength;
@@ -398,14 +400,14 @@ export function createDownloadManager({
                   );
             showToast(
               multipleFiles && !writesSeparateFiles
-                ? 'Downloading ZIP (' + percent + '%)'
-                : 'Downloading file ' +
+                ? "Downloading ZIP (" + percent + "%)"
+                : "Downloading file " +
                     (fileIndex + 1) +
-                    '/' +
+                    "/" +
                     payload.files.length +
-                    ' (' +
+                    " (" +
                     percent +
-                    '%)',
+                    "%)",
               { persist: true },
             );
           }
@@ -418,16 +420,16 @@ export function createDownloadManager({
       }
       let serverCopyDestroyed = true;
       try {
-        await api('/api/chunked-download/' + payload.downloadId, {
-          method: 'DELETE',
-          headers: { Authorization: 'Bearer ' + payload.downloadToken },
+        await api("/api/chunked-download/" + payload.downloadId, {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + payload.downloadToken },
         });
       } catch {
         serverCopyDestroyed = false;
       }
       return { fileCount: payload.files.length, serverCopyDestroyed };
     } catch (error) {
-      if (error && typeof error === 'object') {
+      if (error && typeof error === "object") {
         error.chunkedDownloadStarted = true;
       }
       throw error;
@@ -436,7 +438,7 @@ export function createDownloadManager({
 
   async function downloadLegacyFiles(key, lookupKey) {
     const payload = await downloadJsonWithProgress(
-      '/api/download',
+      "/api/download",
       { lookupKey },
       (event) => {
         if (event.lengthComputable) {
@@ -444,10 +446,10 @@ export function createDownloadManager({
             100,
             Math.round((event.loaded / event.total) * 100),
           );
-          showToast('Downloading: ' + percent + '%', { persist: true });
+          showToast("Downloading: " + percent + "%", { persist: true });
         } else {
           const mb = (event.loaded / (1024 * 1024)).toFixed(1);
-          showToast('Downloading: ' + mb + ' MB', { persist: true });
+          showToast("Downloading: " + mb + " MB", { persist: true });
         }
       },
     );
@@ -468,7 +470,11 @@ export function createDownloadManager({
 
     for (const encryptedFile of encryptedFiles) {
       showToast(
-        'Decrypting file ' + (decryptedCount + 1) + ' of ' + totalFilesCount + '...',
+        "Decrypting file " +
+          (decryptedCount + 1) +
+          " of " +
+          totalFilesCount +
+          "...",
         { persist: true },
       );
       const metaBytes = await decryptBytes(
@@ -484,8 +490,8 @@ export function createDownloadManager({
       );
       files.push({
         bytes: fileBytes,
-        mime: meta.mime || 'application/octet-stream',
-        name: meta.name || 'drop-file',
+        mime: meta.mime || "application/octet-stream",
+        name: meta.name || "drop-file",
       });
       decryptedCount += 1;
     }
@@ -494,7 +500,7 @@ export function createDownloadManager({
       const [file] = files;
       downloadBlob(new Blob([file.bytes], { type: file.mime }), file.name);
     } else {
-      showToast('Compressing files...', { persist: true });
+      showToast("Compressing files...", { persist: true });
       const usedNames = new Set();
       const zipEntries = {};
       for (const file of files) {
@@ -509,8 +515,8 @@ export function createDownloadManager({
       });
 
       downloadBlob(
-        new Blob([zipBytes], { type: 'application/zip' }),
-        'drop-files.zip',
+        new Blob([zipBytes], { type: "application/zip" }),
+        "drop-files.zip",
       );
     }
 
@@ -519,8 +525,8 @@ export function createDownloadManager({
 
   async function checkAvailability(code) {
     const lookupKey = await lookupKeyFromCode(code);
-    return api('/api/chunked-download/status', {
-      method: 'POST',
+    return api("/api/chunked-download/status", {
+      method: "POST",
       body: JSON.stringify({ lookupKey }),
     });
   }

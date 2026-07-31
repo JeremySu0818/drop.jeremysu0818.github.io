@@ -1,6 +1,6 @@
-import { formatBytes, shortenFilename } from './file-utils.js';
+import { formatBytes, shortenFilename } from "./file-utils.js";
 
-const DEFAULT_FILE_META = 'Supports all file formats';
+const DEFAULT_FILE_META = "Supports all file formats";
 
 export function createToastManager(toastElement) {
   let toastTimer = 0;
@@ -9,12 +9,12 @@ export function createToastManager(toastElement) {
   const hide = () => {
     window.clearTimeout(toastTimer);
     window.clearTimeout(hideTimer);
-    toastElement.classList.remove('is-visible');
+    toastElement.classList.remove("is-visible");
     hideTimer = window.setTimeout(() => {
       if (
-        !toastElement.classList.contains('is-visible') &&
-        typeof toastElement.hidePopover === 'function' &&
-        toastElement.matches?.(':popover-open')
+        !toastElement.classList.contains("is-visible") &&
+        typeof toastElement.hidePopover === "function" &&
+        toastElement.matches?.(":popover-open")
       ) {
         try {
           toastElement.hidePopover();
@@ -29,10 +29,9 @@ export function createToastManager(toastElement) {
       window.clearTimeout(toastTimer);
       window.clearTimeout(hideTimer);
 
-      // Immediately hide previous popover if currently open so re-opening pushes it to the absolute top of the Top Layer stack
       if (
-        typeof toastElement.hidePopover === 'function' &&
-        toastElement.matches?.(':popover-open')
+        typeof toastElement.hidePopover === "function" &&
+        toastElement.matches?.(":popover-open")
       ) {
         try {
           toastElement.hidePopover();
@@ -41,15 +40,15 @@ export function createToastManager(toastElement) {
 
       toastElement.textContent = message;
 
-      if (typeof toastElement.showPopover === 'function') {
+      if (typeof toastElement.showPopover === "function") {
         try {
           toastElement.showPopover();
         } catch (e) {}
       }
 
-      toastElement.classList.remove('is-visible');
+      toastElement.classList.remove("is-visible");
       void toastElement.offsetWidth;
-      toastElement.classList.add('is-visible');
+      toastElement.classList.add("is-visible");
 
       if (!persist) {
         toastTimer = window.setTimeout(() => {
@@ -87,4 +86,3 @@ export function filterMediaFiles(files) {
 export const filterImageFiles = filterMediaFiles;
 
 export { DEFAULT_FILE_META };
-

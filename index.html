@@ -22,7 +22,12 @@
       <header class="glass-header" data-liquid-glass>
         <a class="header-brand" href="./" aria-label="Drop Home">
           <span class="header-brand-icon" aria-hidden="true">
-            <img src="./static/images/logo.png" alt="Drop Logo" width="20" height="20" />
+            <img
+              src="./static/images/logo.png"
+              alt="Drop Logo"
+              width="20"
+              height="20"
+            />
           </span>
           <span>Drop</span>
         </a>
@@ -37,13 +42,21 @@
           <p class="eyebrow">Drop</p>
           <h1>Secure Encrypted File Sharing</h1>
           <p class="brand-subtitle">
-            Uncensored &amp; zero-knowledge file sharing. All encryption is processed locally in your browser — we cannot access, view, or log your file contents.
+            Uncensored &amp; zero-knowledge file sharing. All encryption is
+            processed locally in your browser — we cannot access, view, or log
+            your file contents.
           </p>
           <div class="disclaimer-bar">
             <svg viewBox="0 0 24 24" aria-hidden="true" role="img">
-              <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <path
+                d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              />
             </svg>
-            <span><strong>Disclaimer:</strong> Users are solely responsible for transferred files. Drop assumes no liability for user content or activities.</span>
+            <span
+              ><strong>Disclaimer:</strong> Users are solely responsible for
+              transferred files. Drop assumes no liability for user content or
+              activities.</span
+            >
           </div>
         </div>
       </section>
@@ -99,9 +112,7 @@
             </div>
           </div>
 
-          <label class="field-label" for="downloadCode"
-            >Decryption Code</label
-          >
+          <label class="field-label" for="downloadCode">Decryption Code</label>
           <textarea
             id="downloadCode"
             spellcheck="false"
@@ -126,7 +137,9 @@
           </span>
           <div>
             <h2>Upload Complete</h2>
-            <p>Share the decryption code first. The secure link is an optional shortcut.</p>
+            <p>
+              Share the decryption code first. The secure link is an shortcut.
+            </p>
           </div>
         </div>
 
@@ -152,7 +165,7 @@
         </div>
 
         <div class="share-link-panel">
-          <label for="shareLink">Optional Secure Share Link</label>
+          <label for="shareLink">Secure Share Link</label>
           <div class="code-row">
             <input id="shareLink" type="text" readonly spellcheck="false" />
             <button
@@ -170,20 +183,24 @@
               </svg>
             </button>
           </div>
-
         </div>
 
         <div class="modal-actions share-actions">
           <button class="secondary-action" id="shareButton" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15" />
+              <path
+                d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"
+              />
             </svg>
             Share Link
           </button>
         </div>
 
-
-        <button class="primary-action close-modal-btn" id="closeModalButton" type="button">
+        <button
+          class="primary-action close-modal-btn"
+          id="closeModalButton"
+          type="button"
+        >
           Done
         </button>
       </dialog>
@@ -226,7 +243,13 @@
         </div>
       </dialog>
 
-      <div class="toast" id="toast" role="status" aria-live="polite" popover="manual"></div>
+      <div
+        class="toast"
+        id="toast"
+        role="status"
+        aria-live="polite"
+        popover="manual"
+      ></div>
     </main>
 
     <script type="module" src="./static/js/app.js"></script>

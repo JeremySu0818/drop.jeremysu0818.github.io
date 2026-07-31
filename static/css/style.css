@@ -1,5 +1,5 @@
 :root {
-  --page-background: url('../images/backgrounds/1.jpg');
+  --page-background: url("../images/backgrounds/1.jpg");
   --page-background-position: center;
   --bg-ink: #0b0d10;
   --text: #101318;
@@ -16,7 +16,7 @@
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    'Segoe UI',
+    "Segoe UI",
     sans-serif;
 }
 
@@ -72,7 +72,7 @@ body {
 }
 
 body::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   z-index: -2;
@@ -110,7 +110,7 @@ button {
 .eyebrow {
   margin: 0 0 8px;
   color: rgba(16, 19, 24, 0.78);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.85rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -126,7 +126,7 @@ p {
 h1 {
   max-width: 780px;
   margin-bottom: 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: clamp(2.25rem, 5vw, 5rem);
   font-weight: 800;
   line-height: 0.95;
@@ -165,7 +165,7 @@ h1 {
 
 h2 {
   margin-bottom: 4px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 1.45rem;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -518,7 +518,7 @@ dialog::backdrop {
   align-items: center;
   margin: 0 0 18px 12px;
   color: rgba(16, 19, 24, 0.78);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -598,7 +598,7 @@ dialog::backdrop {
   gap: 10px;
   text-decoration: none;
   color: var(--text);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-weight: 800;
   font-size: 1.25rem;
   letter-spacing: -0.02em;
@@ -639,7 +639,7 @@ dialog::backdrop {
   padding: 8px 18px;
   border-radius: 999px;
   color: var(--muted);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-weight: 700;
   font-size: 0.92rem;
   text-decoration: none;
@@ -692,7 +692,7 @@ dialog::backdrop {
 
 .feature-item h3 {
   margin: 0 0 4px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -711,7 +711,7 @@ dialog::backdrop {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.25);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-weight: 700;
   font-size: 0.82rem;
   color: var(--text);
@@ -737,7 +737,7 @@ dialog::backdrop {
   border-radius: 999px;
   background: var(--text);
   color: #ffffff;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
   text-decoration: none;
@@ -870,7 +870,7 @@ dialog::backdrop {
 .about-hero-note strong {
   display: block;
   margin-bottom: 4px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 1rem;
   font-weight: 800;
   color: var(--text);
@@ -917,7 +917,7 @@ dialog::backdrop {
 .about-index-label {
   margin-right: 6px;
   color: var(--muted);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -927,7 +927,7 @@ dialog::backdrop {
   padding: 8px 16px;
   border-radius: 999px;
   color: var(--text);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
   text-decoration: none;
@@ -995,7 +995,7 @@ dialog::backdrop {
   top: 16px;
   right: 18px;
   color: rgba(16, 19, 24, 0.4);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.85rem;
   font-weight: 800;
 }
@@ -1037,7 +1037,7 @@ dialog::backdrop {
 .comparison-side h3,
 .boundary-card h3 {
   margin: 0 0 8px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 1.15rem;
   font-weight: 700;
   line-height: 1.2;
@@ -1079,7 +1079,7 @@ dialog::backdrop {
 
 .flow-arrow span,
 .lane-arrow span {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -1118,7 +1118,7 @@ dialog::backdrop {
   display: block;
   margin-bottom: 6px;
   color: rgba(16, 19, 24, 0.75);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -1150,7 +1150,7 @@ dialog::backdrop {
 .process-step {
   margin-bottom: 14px;
   color: rgba(16, 19, 24, 0.4);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1199,7 +1199,7 @@ dialog::backdrop {
 .lane-item strong {
   display: block;
   margin-bottom: 6px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 1.02rem;
   line-height: 1.2;
 }
@@ -1252,14 +1252,14 @@ dialog::backdrop {
   border-radius: 50%;
   background: var(--text);
   color: #fff;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.72rem;
   font-weight: 800;
 }
 
 .key-map-item h3 {
   margin: 0 0 8px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 1.02rem;
   line-height: 1.2;
 }
@@ -1289,7 +1289,7 @@ dialog::backdrop {
 .key-map-branch span::before,
 .key-map-branch span::after {
   position: absolute;
-  content: '';
+  content: "";
   background: var(--line);
 }
 
@@ -1384,7 +1384,7 @@ dialog::backdrop {
 
 .data-list dt {
   margin-bottom: 4px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.9rem;
   font-weight: 800;
   color: var(--text);
@@ -1446,7 +1446,7 @@ dialog::backdrop {
   left: 21px;
   width: 1px;
   background: var(--line);
-  content: '';
+  content: "";
 }
 
 .vertical-number {
@@ -1458,7 +1458,7 @@ dialog::backdrop {
   border: 1px solid var(--line);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.45);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.85rem;
   font-weight: 800;
   color: var(--text);
@@ -1543,7 +1543,7 @@ dialog::backdrop {
 
 .memory-title h3 {
   margin: 0 0 2px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 1.15rem;
 }
 
@@ -1575,7 +1575,7 @@ dialog::backdrop {
   display: block;
   margin-bottom: 3px;
   font-size: 0.85rem;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
 }
 
 .stack-frame span,
@@ -1598,7 +1598,7 @@ dialog::backdrop {
   justify-content: center;
   gap: 6px;
   color: var(--muted);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -1623,7 +1623,7 @@ dialog::backdrop {
   background: rgba(255, 255, 255, 0.4);
   border: 1px solid var(--line);
   color: var(--text);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.9rem;
   font-weight: 800;
 }
@@ -1659,7 +1659,7 @@ dialog::backdrop {
 .timeline-steps span {
   display: block;
   margin-bottom: 8px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.95rem;
   font-weight: 800;
   line-height: 1.2;
@@ -1706,7 +1706,7 @@ dialog::backdrop {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.35);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 2rem;
   font-weight: 800;
   color: var(--text);
@@ -1756,7 +1756,7 @@ dialog::backdrop {
   display: grid;
   place-items: center;
   color: var(--muted);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.88rem;
   font-weight: 800;
 }
@@ -1784,7 +1784,7 @@ dialog::backdrop {
   border-radius: 50%;
   background: var(--text);
   color: #fff;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.7rem;
   font-weight: 800;
 }
@@ -1792,7 +1792,7 @@ dialog::backdrop {
 .native-lifecycle strong {
   display: block;
   margin-bottom: 6px;
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.95rem;
 }
 
@@ -1818,7 +1818,7 @@ dialog::backdrop {
   display: block;
   margin-bottom: 16px;
   color: rgba(16, 19, 24, 0.4);
-  font-family: 'Outfit', sans-serif;
+  font-family: "Outfit", sans-serif;
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.08em;

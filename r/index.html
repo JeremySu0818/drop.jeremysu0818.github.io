@@ -23,7 +23,12 @@
       <header class="glass-header" data-liquid-glass>
         <a class="header-brand" href="../" aria-label="Drop Home">
           <span class="header-brand-icon" aria-hidden="true">
-            <img src="../static/images/logo.png" alt="Drop Logo" width="20" height="20" />
+            <img
+              src="../static/images/logo.png"
+              alt="Drop Logo"
+              width="20"
+              height="20"
+            />
           </span>
           <span>Drop</span>
         </a>
@@ -45,8 +50,8 @@
               <p class="eyebrow">Secure file drop</p>
               <h1 id="receiveTitle">Encrypted file ready</h1>
               <p id="receiveDescription">
-                Your file stays encrypted until it is downloaded in this browser.
-                Opening this link alone does not claim or delete it.
+                Your file stays encrypted until it is downloaded in this
+                browser. Opening this link alone does not claim or delete it.
               </p>
             </div>
           </div>
@@ -62,7 +67,9 @@
 
           <p class="receive-security-note">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <path
+                d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              />
             </svg>
             <span>
               The server copy is destroyed only after a successful save, or when
@@ -86,21 +93,37 @@
             </span>
             <div>
               <h2 id="downloadDestinationTitle">Save Multiple Files</h2>
-              <p>Choose one folder. Every file will be streamed there separately.</p>
+              <p>
+                Choose one folder. Every file will be streamed there separately.
+              </p>
             </div>
           </div>
 
           <div class="modal-actions">
-            <button class="primary-action" id="chooseDirectoryButton" type="button">
+            <button
+              class="primary-action"
+              id="chooseDirectoryButton"
+              type="button"
+            >
               Choose Folder
             </button>
-            <button class="secondary-action" id="cancelDirectoryButton" type="button">
+            <button
+              class="secondary-action"
+              id="cancelDirectoryButton"
+              type="button"
+            >
               Cancel
             </button>
           </div>
         </dialog>
 
-        <div class="toast" id="toast" role="status" aria-live="polite" popover="manual"></div>
+        <div
+          class="toast"
+          id="toast"
+          role="status"
+          aria-live="polite"
+          popover="manual"
+        ></div>
       </main>
     </div>
 
