@@ -64,7 +64,6 @@ export async function lookupKeyFromCode(code) {
   return bytesToHex(await sha256Bytes(`lookup:${code}`));
 }
 
-export async function createShareCode() {
-  const secret = crypto.getRandomValues(new Uint8Array(32));
-  return bytesToHex(secret);
+export function createShareCode() {
+  return bytesToHex(crypto.getRandomValues(new Uint8Array(32)));
 }

@@ -350,6 +350,53 @@ textarea {
   white-space: pre-wrap;
 }
 
+#shareLink {
+  min-width: 0;
+  min-height: 52px;
+  margin-bottom: 0;
+  padding: 0 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.share-link-panel {
+  margin-top: 20px;
+  border-top: 1px solid rgba(16, 19, 24, 0.12);
+  padding-top: 16px;
+}
+
+.share-link-panel > label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.share-link-note {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.share-link-note code {
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.34);
+  color: var(--text);
+}
+
+.share-actions {
+  margin-top: 18px;
+}
+
+.share-actions .secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
 #downloadCode {
   flex-grow: 1;
 }
@@ -430,6 +477,76 @@ dialog::backdrop {
   gap: 10px;
 }
 
+.receive-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.receive-shell {
+  width: min(560px, 100%);
+}
+
+.receive-brand {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 18px 12px;
+  color: rgba(16, 19, 24, 0.78);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.receive-card {
+  min-height: 0;
+  padding: 30px;
+}
+
+.receive-card .card-head {
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.receive-card h1 {
+  max-width: none;
+  margin-bottom: 6px;
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  line-height: 0.98;
+}
+
+.receive-card .primary-action {
+  margin-top: 24px;
+}
+
+.receive-security-note {
+  display: flex;
+  gap: 9px;
+  margin-top: 16px;
+  color: rgba(16, 19, 24, 0.72);
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.receive-security-note svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.receive-error {
+  margin-top: 4px;
+  color: var(--text);
+}
+
+.receive-error[hidden] {
+  display: none;
+}
+
 @media (max-width: 820px) {
   .app-shell {
     width: min(100% - 24px, 620px);
@@ -464,5 +581,13 @@ dialog::backdrop {
 
   .drop-title {
     font-size: 1.45rem;
+  }
+
+  .receive-page {
+    padding: 16px;
+  }
+
+  .receive-card {
+    padding: 22px;
   }
 }

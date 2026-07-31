@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Drop — Secure Download</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://esm.sh" />
+    <link rel="stylesheet" href="https://esm.sh/solid-glass@0.0.3/css" />
+    <link rel="stylesheet" href="../static/css/style.css" />
+  </head>
+  <body class="receive-page">
+    <main class="receive-shell">
+      <a class="receive-brand" href="../" aria-label="Back to Drop">Drop</a>
+
+      <article class="glass-card receive-card" data-liquid-glass>
+        <div class="card-head">
+          <span class="icon-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M12 4v12m0 0 4.5-4.5M12 16l-4.5-4.5M5 20h14" />
+            </svg>
+          </span>
+          <div>
+            <p class="eyebrow">Secure file drop</p>
+            <h1 id="receiveTitle">Encrypted file ready</h1>
+            <p id="receiveDescription">
+              Your file stays encrypted until it is downloaded in this browser.
+              Opening this link alone does not claim or delete it.
+            </p>
+          </div>
+        </div>
+
+        <p class="receive-error" id="receiveError" role="alert" hidden></p>
+
+        <button class="primary-action" id="downloadButton" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
+          </svg>
+          Decrypt &amp; Download
+        </button>
+
+        <p class="receive-security-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          </svg>
+          <span>
+            The server copy is destroyed only after a successful save, or when
+            it expires. If the download is cancelled, this same link can be
+            used again until expiry.
+          </span>
+        </p>
+      </article>
+
+      <dialog
+        class="glass-card destination-modal"
+        id="downloadDestinationModal"
+        aria-labelledby="downloadDestinationTitle"
+        data-liquid-glass
+      >
+        <div class="card-head">
+          <span class="icon-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M3 7h7l2 2h9v10H3z" />
+            </svg>
+          </span>
+          <div>
+            <h2 id="downloadDestinationTitle">Save Multiple Files</h2>
+            <p>Choose one folder. Every file will be streamed there separately.</p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="primary-action" id="chooseDirectoryButton" type="button">
+            Choose Folder
+          </button>
+          <button class="secondary-action" id="cancelDirectoryButton" type="button">
+            Cancel
+          </button>
+        </div>
+      </dialog>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" popover="manual"></div>
+    </main>
+
+    <script type="module" src="../static/js/receive.js"></script>
+  </body>
+</html>

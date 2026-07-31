@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="no-referrer" />
     <title>Drop</title>
     <link rel="icon" type="image/x-icon" href="./favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -112,17 +113,17 @@
           </span>
           <div>
             <h2>Upload Complete</h2>
-            <p>Share this decryption code.</p>
+            <p>Share the decryption code first. The secure link is an optional shortcut.</p>
           </div>
         </div>
 
-        <div class="code-panel">
+        <div class="code-panel primary-code-panel">
           <label for="shareCode">Decryption Code</label>
           <div class="code-row">
             <textarea id="shareCode" readonly></textarea>
             <button
               class="icon-button"
-              id="copyButton"
+              id="copyCodeButton"
               type="button"
               title="Copy Decryption Code"
               aria-label="Copy Decryption Code"
@@ -136,6 +137,40 @@
             </button>
           </div>
         </div>
+
+        <div class="share-link-panel">
+          <label for="shareLink">Optional Secure Share Link</label>
+          <div class="code-row">
+            <input id="shareLink" type="text" readonly spellcheck="false" />
+            <button
+              class="icon-button"
+              id="copyLinkButton"
+              type="button"
+              title="Copy Secure Share Link"
+              aria-label="Copy Secure Share Link"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 8h10v12H8z" />
+                <path
+                  d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
+                />
+              </svg>
+            </button>
+          </div>
+          <p class="share-link-note">
+            The random access code stays after <code>#</code>, so it is not sent in server requests.
+          </p>
+        </div>
+
+        <div class="modal-actions share-actions">
+          <button class="secondary-action" id="shareButton" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15" />
+            </svg>
+            Share Link
+          </button>
+        </div>
+
 
         <button class="primary-action close-modal-btn" id="closeModalButton" type="button">
           Done
