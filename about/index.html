@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="no-referrer" />
+    <title>About — Drop Secure Encrypted File Sharing</title>
+    <meta
+      name="description"
+      content="Learn about Drop's zero-knowledge architecture, client-side AES-GCM encryption, short secure link security, and technical implementation."
+    />
+    <link rel="icon" type="image/x-icon" href="../favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://esm.sh" />
+    <link rel="stylesheet" href="https://esm.sh/solid-glass@0.0.3/css" />
+    <link rel="stylesheet" href="../static/css/style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="glass-header" data-liquid-glass>
+        <a class="header-brand" href="../" aria-label="Drop Home">
+          <span class="header-brand-icon" aria-hidden="true">
+            <img src="../static/images/logo.png" alt="Drop Logo" width="20" height="20" />
+          </span>
+          <span>Drop</span>
+        </a>
+        <nav class="header-nav" aria-label="Main Navigation">
+          <a class="nav-link" href="../">Home</a>
+          <a class="nav-link active" href="./">About</a>
+        </nav>
+      </header>
+
+      <section class="brand-strip" aria-label="About Drop">
+        <div class="brand-header">
+          <p class="eyebrow">Security &amp; Architecture</p>
+          <h1>About Drop</h1>
+          <p class="brand-subtitle">
+            Drop is a lightweight, zero-knowledge, end-to-end encrypted file sharing web application.
+            All encryption happens locally inside your browser before uploading — we never see or store your unencrypted files.
+          </p>
+        </div>
+      </section>
+
+      <section class="about-grid">
+        <article class="glass-card" data-liquid-glass>
+          <div class="card-head">
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </span>
+            <div>
+              <h2>Zero-Knowledge Security</h2>
+              <p>End-to-end encryption designed for maximum privacy.</p>
+            </div>
+          </div>
+
+          <div class="feature-list">
+            <div class="feature-item">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M21 2l-2 2m-2-2l2 2M3 13a4 4 0 1 0 8 0 4 4 0 1 0-8 0zm0 0V9a2 2 0 0 1 2-2h4m5 13a4 4 0 1 0 8 0 4 4 0 1 0-8 0zm0 0v-4a2 2 0 0 1 2-2h4" />
+                </svg>
+              </span>
+              <div>
+                <h3>Client-Side AES-GCM</h3>
+                <p>Files are encrypted in your browser using AES-GCM-256 with random IVs before being transmitted.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+              </span>
+              <div>
+                <h3>Zero-Knowledge Short Links</h3>
+                <p>Decryption keys are placed in URL hash fragments (<code>#token</code>). Browsers never send fragments to servers, keeping keys private.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </span>
+              <div>
+                <h3>Automatic Server Cleanup</h3>
+                <p>Encrypted files automatically expire in 30 minutes and server copies are destroyed immediately after a successful download.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="glass-card" data-liquid-glass>
+          <div class="card-head">
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
+              </svg>
+            </span>
+            <div>
+              <h2>Technical Implementation</h2>
+              <p>Modern Web APIs and performance-first engineering.</p>
+            </div>
+          </div>
+
+          <div class="feature-list">
+            <div class="feature-item">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+              </span>
+              <div>
+                <h3>Web Crypto &amp; Streaming</h3>
+                <p>Leveraging native <code>SubtleCrypto</code> and <code>TransformStream</code> for low-latency, memory-efficient streaming encryption.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 3v18M3 12h18" />
+                </svg>
+              </span>
+              <div>
+                <h3>Resumable Transfer Manager</h3>
+                <p>Supports multi-file streaming, progress tracking, and robust error recovery without consuming incomplete server copies.</p>
+              </div>
+            </div>
+
+            <div class="feature-item">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              </span>
+              <div>
+                <h3>Solid Glass UI</h3>
+                <p>Crafted with modern CSS glassmorphism, dynamic SVG refraction shaders, and responsive squircle geometry.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="tech-badge-group">
+            <span class="tech-badge">Web Crypto API</span>
+            <span class="tech-badge">AES-GCM-256</span>
+            <span class="tech-badge">Solid Glass</span>
+            <span class="tech-badge">Vanilla JS</span>
+            <span class="tech-badge">Base62 Token</span>
+          </div>
+        </article>
+      </section>
+
+      <article class="glass-card about-full-card" data-liquid-glass>
+        <div class="repo-card-body">
+          <div class="repo-info">
+            <h2>Open Source &amp; Codebase</h2>
+            <p>
+              Drop is completely open-source. You can inspect the source code, review security implementations, or run your own instance.
+            </p>
+          </div>
+          <a
+            class="github-btn"
+            href="https://github.com/JeremySu0818/drop.jeremysu0818.github.io"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path
+                d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"
+              />
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+      </article>
+
+      <div class="toast" id="toast" role="status" aria-live="polite" popover="manual"></div>
+    </main>
+
+    <script type="module" src="../static/js/about.js"></script>
+  </body>
+</html>
