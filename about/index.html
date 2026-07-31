@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="referrer" content="no-referrer" />
-    <title>About — Drop Secure Encrypted File Sharing</title>
+    <title>How Drop Actually Works</title>
     <meta
       name="description"
-      content="Learn about Drop's zero-knowledge architecture, client-side AES-GCM encryption, short secure link security, and technical implementation."
+      content="No fluff. Breaking down Drop's entire process from file selection, encryption, server transfer, download, to deletion, plus why the server runs C++."
     />
     <link rel="icon" type="image/x-icon" href="../favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="../static/css/style.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <main class="app-shell about-page">
       <header class="glass-header" data-liquid-glass>
         <a class="header-brand" href="../" aria-label="Drop Home">
           <span class="header-brand-icon" aria-hidden="true">
@@ -36,152 +36,457 @@
         </nav>
       </header>
 
-      <section class="brand-strip" aria-label="About Drop">
+      <section class="brand-strip about-hero" aria-labelledby="about-title">
         <div class="brand-header">
-          <p class="eyebrow">Security &amp; Architecture</p>
-          <h1>About Drop</h1>
+          <p class="eyebrow">No marketing copy here</p>
+          <h1 id="about-title">What Drop actually does, and doesn't do.</h1>
           <p class="brand-subtitle">
-            Drop is a lightweight, zero-knowledge, end-to-end encrypted file sharing web application.
-            All encryption happens locally inside your browser before uploading — we never see or store your unencrypted files.
+            Drop is an accountless, short-term file sharing tool. This page explains the codebase directly—from the moment you pick a file, until the recipient finishes downloading and the server wipes everything. Plus why the server core runs C++ instead of offloading everything to Node.js.
           </p>
         </div>
       </section>
 
-      <section class="about-grid">
-        <article class="glass-card" data-liquid-glass>
-          <div class="card-head">
-            <span class="icon-badge" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="img">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-            </span>
-            <div>
-              <h2>Zero-Knowledge Security</h2>
-              <p>End-to-end encryption designed for maximum privacy.</p>
+      <section class="about-section" id="architecture" aria-labelledby="architecture-title">
+        <div class="section-heading">
+          <p class="eyebrow">01 · System Architecture</p>
+          <h2 id="architecture-title">Who can see what?</h2>
+          <p>The most critical detail: your files are encrypted locally inside your browser before anything leaves. The server only receives encrypted ciphertext and a lookup index used to locate it—the decryption share code is never sent to the server.</p>
+        </div>
+
+        <article class="glass-card architecture-card" data-liquid-glass>
+          <div class="architecture-flow" aria-label="Drop system architecture flow">
+            <div class="system-node system-node-browser">
+              <span class="system-number">1</span>
+              <span class="system-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+              </span>
+              <h3>Sender's Browser</h3>
+              <p>Reads your file, chunks and encrypts it, and keeps the share code and short link here.</p>
+              <span class="node-tag">Can see raw file</span>
+            </div>
+            <div class="flow-arrow" aria-hidden="true">
+              <span>HTTPS Transfer</span>
+              <svg viewBox="0 0 24 24" role="img" class="flow-arrow-icon"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            </div>
+            <div class="system-node system-node-server">
+              <span class="system-number">2</span>
+              <span class="system-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+              </span>
+              <h3>Drop Server</h3>
+              <p>Node.js handles HTTP requests; ciphertext, expiration time, and transfer state are managed in memory by the C++ core.</p>
+              <span class="node-tag">Stores ciphertext, no share code</span>
+            </div>
+            <div class="flow-arrow" aria-hidden="true">
+              <span>HTTPS Transfer</span>
+              <svg viewBox="0 0 24 24" role="img" class="flow-arrow-icon"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            </div>
+            <div class="system-node system-node-browser">
+              <span class="system-number">3</span>
+              <span class="system-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M12 7v6m0 0 2.5-2.5M12 13 9.5 10.5M8 21h8m-4-4v4"/></svg>
+              </span>
+              <h3>Recipient's Browser</h3>
+              <p>Uses the random token in the URL or the pasted share code to decrypt chunk by chunk and save to disk.</p>
+              <span class="node-tag">Can see raw file</span>
             </div>
           </div>
 
-          <div class="feature-list">
-            <div class="feature-item">
-              <span class="icon-badge" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M21 2l-2 2m-2-2l2 2M3 13a4 4 0 1 0 8 0 4 4 0 1 0-8 0zm0 0V9a2 2 0 0 1 2-2h4m5 13a4 4 0 1 0 8 0 4 4 0 1 0-8 0zm0 0v-4a2 2 0 0 1 2-2h4" />
-                </svg>
-              </span>
-              <div>
-                <h3>Client-Side AES-GCM</h3>
-                <p>Files are encrypted in your browser using AES-GCM-256 with random IVs before being transmitted.</p>
-              </div>
+          <div class="architecture-notes">
+            <div class="fact-callout">
+              <span class="callout-label">Verifiable in source code</span>
+              <p>File contents and metadata (filename, type, etc.) are encrypted with AES-GCM inside the browser before sending. The server only stores ciphertext bytes with zero plaintext.</p>
             </div>
-
-            <div class="feature-item">
-              <span class="icon-badge" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-              </span>
-              <div>
-                <h3>Zero-Knowledge Short Links</h3>
-                <p>Decryption keys are placed in URL hash fragments (<code>#token</code>). Browsers never send fragments to servers, keeping keys private.</p>
-              </div>
+            <div class="fact-callout fact-callout-soft">
+              <span class="callout-label">Why put it after the #</span>
+              <p>The short link's 22-character random token sits after the URL fragment identifier (<code>#</code>). Browsers never send hash fragments in HTTP requests, so the server never sees it. The recipient page converts it to a share code locally.</p>
             </div>
-
-            <div class="feature-item">
-              <span class="icon-badge" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-              </span>
-              <div>
-                <h3>Automatic Server Cleanup</h3>
-                <p>Encrypted files automatically expire in 30 minutes and server copies are destroyed immediately after a successful download.</p>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="glass-card" data-liquid-glass>
-          <div class="card-head">
-            <span class="icon-badge" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="img">
-                <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
-              </svg>
-            </span>
-            <div>
-              <h2>Technical Implementation</h2>
-              <p>Modern Web APIs and performance-first engineering.</p>
-            </div>
-          </div>
-
-          <div class="feature-list">
-            <div class="feature-item">
-              <span class="icon-badge" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                </svg>
-              </span>
-              <div>
-                <h3>Web Crypto &amp; Streaming</h3>
-                <p>Leveraging native <code>SubtleCrypto</code> and <code>TransformStream</code> for low-latency, memory-efficient streaming encryption.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <span class="icon-badge" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 3v18M3 12h18" />
-                </svg>
-              </span>
-              <div>
-                <h3>Resumable Transfer Manager</h3>
-                <p>Supports multi-file streaming, progress tracking, and robust error recovery without consuming incomplete server copies.</p>
-              </div>
-            </div>
-
-            <div class="feature-item">
-              <span class="icon-badge" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </span>
-              <div>
-                <h3>Solid Glass UI</h3>
-                <p>Crafted with modern CSS glassmorphism, dynamic SVG refraction shaders, and responsive squircle geometry.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="tech-badge-group">
-            <span class="tech-badge">Web Crypto API</span>
-            <span class="tech-badge">AES-GCM-256</span>
-            <span class="tech-badge">Solid Glass</span>
-            <span class="tech-badge">Vanilla JS</span>
-            <span class="tech-badge">Base62 Token</span>
           </div>
         </article>
       </section>
 
-      <article class="glass-card about-full-card" data-liquid-glass>
-        <div class="repo-card-body">
-          <div class="repo-info">
-            <h2>Open Source &amp; Codebase</h2>
-            <p>
-              Drop is completely open-source. You can inspect the source code, review security implementations, or run your own instance.
-            </p>
+      <section class="about-section" id="upload" aria-labelledby="upload-title">
+        <div class="section-heading">
+          <p class="eyebrow">02 · Selection, Encryption & Upload</p>
+          <h2 id="upload-title">Files are chunked and encrypted before leaving your device.</h2>
+          <p>You can select or drag and drop single or multiple files. The frontend verifies that your browser can still read those files before establishing an upload session with the server. The process never merges files into a single giant archive first—each chunk is transmitted as soon as it's encrypted.</p>
+        </div>
+
+        <div class="story-grid story-grid-four">
+          <article class="glass-card process-card" data-liquid-glass>
+            <div class="process-step">01</div>
+            <span class="process-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
+            </span>
+            <h3>Selection & Verification</h3>
+            <p>The frontend reads a tiny slice of each file to verify accessibility. If a file was moved or lost permissions after selection, this step catches it and alerts you immediately.</p>
+          </article>
+          <article class="glass-card process-card" data-liquid-glass>
+            <div class="process-step">02</div>
+            <span class="process-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <h3>Session Negotiation</h3>
+            <p>The browser sends each file's size, expected chunk count, and encrypted metadata to the server. The server responds with a session ID, expiration time, and target chunk size.</p>
+          </article>
+          <article class="glass-card process-card" data-liquid-glass>
+            <div class="process-step">03</div>
+            <span class="process-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <h3>Chunk & Encrypt</h3>
+            <p>Each file is split into 64 MiB chunks. Each chunk is encrypted with AES-GCM inside an isolated Web Worker, running up to 3 parallel threads to balance speed and memory usage.</p>
+          </article>
+          <article class="glass-card process-card" data-liquid-glass>
+            <div class="process-step">04</div>
+            <span class="process-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+            </span>
+            <h3>Transfer Ciphertext & Finalize</h3>
+            <p>Each ciphertext chunk is sent along with its unique IV. Once the server verifies size matching and all chunks arrive, the session is marked as ready for download.</p>
+          </article>
+        </div>
+
+        <article class="glass-card encryption-walkthrough" data-liquid-glass>
+          <div class="card-head">
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <div>
+              <h3>What a single chunk goes through during encryption</h3>
+              <p>A closer look at a single chunk: plaintext exists only on your device, while the network and server see only ciphertext.</p>
+            </div>
           </div>
-          <a
-            class="github-btn"
-            href="https://github.com/JeremySu0818/drop.jeremysu0818.github.io"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
-              <path
-                d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"
-              />
-            </svg>
-            View on GitHub
+          <div class="encryption-lane" aria-label="File chunk encryption process">
+            <div class="lane-item lane-plain">
+              <span class="lane-label">Browser Reads</span>
+              <strong>Raw Chunk</strong>
+              <small>Up to 64 MiB</small>
+            </div>
+            <div class="lane-arrow" aria-hidden="true">
+              <span>AES-GCM</span>
+              <svg viewBox="0 0 24 24" role="img" class="lane-arrow-icon"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            </div>
+            <div class="lane-item lane-crypto">
+              <span class="lane-label">Browser Encrypts</span>
+              <strong>Ciphertext + Auth Tag</strong>
+              <small>New 12-byte IV per chunk</small>
+            </div>
+            <div class="lane-arrow" aria-hidden="true">
+              <span>Upload</span>
+              <svg viewBox="0 0 24 24" role="img" class="lane-arrow-icon"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            </div>
+            <div class="lane-item lane-server">
+              <span class="lane-label">Server Stores</span>
+              <strong>Ciphertext & IV</strong>
+              <small>In-memory C++ secure byte container</small>
+            </div>
+          </div>
+          <p class="walkthrough-caption">AES-GCM provides both confidentiality and integrity: without the correct key, ciphertext is gibberish; if ciphertext, IV, or auth tag is tampered with, browser decryption fails with an error instead of silently outputting corrupted data.</p>
+        </article>
+      </section>
+
+      <section class="about-section" id="keys" aria-labelledby="keys-title">
+        <div class="section-heading">
+          <p class="eyebrow">03 · Keys, Share Codes & Data Derivation</p>
+          <h2 id="keys-title">Deriving multiple distinct values from a single secret.</h2>
+          <p>This is where confusion often arises: share code, AES key, server lookup index, and download token are NOT the same value. Each has a dedicated purpose, and the frontend prefixes distinct purpose strings during hashing to prevent cross-domain misuse.</p>
+        </div>
+
+        <article class="glass-card key-map-card" data-liquid-glass>
+          <div class="key-map" aria-label="Key and identifier derivation flow">
+            <div class="key-map-item key-map-origin">
+              <span class="key-dot">A</span>
+              <h3>22-Char URL Token</h3>
+              <p>Generated via browser cryptographically secure random bytes using unbiased Base62. Exists only after the URL # for the recipient.</p>
+              <span class="key-location">Shared with recipient</span>
+            </div>
+            <div class="key-map-branch" aria-hidden="true"><span></span><span></span></div>
+            <div class="key-map-item key-map-local">
+              <span class="key-dot">B</span>
+              <h3>64-Char Share Code</h3>
+              <p>Derived by SHA-256 hashing A with a "share-code" purpose tag. Can also be copied and pasted manually by the recipient.</p>
+              <span class="key-location">Sender & Recipient Browsers</span>
+            </div>
+            <div class="key-map-item key-map-local">
+              <span class="key-dot">C</span>
+              <h3>AES-256 Key</h3>
+              <p>Derived by SHA-256 hashing the share code again. The resulting 256-bit key is imported directly into the Web Crypto API.</p>
+              <span class="key-location">Used only during browser crypto ops</span>
+            </div>
+            <div class="key-map-item key-map-server">
+              <span class="key-dot">D</span>
+              <h3>Lookup Index</h3>
+              <p>Derived by SHA-256 hashing the share code with a "lookup" tag. Sent to the server to locate ciphertext. This index cannot decrypt data.</p>
+              <span class="key-location">Sent to Server</span>
+            </div>
+          </div>
+          <div class="key-map-summary">
+            <span class="summary-lock" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <p><strong>Hashing is not encryption.</strong> SHA-256 is one-way—you can compute the lookup index from the share code, but you cannot reverse it. The server uses the lookup index to find records without ever knowing the share code.</p>
+          </div>
+        </article>
+
+        <div class="about-grid data-grid">
+          <article class="glass-card data-card" data-liquid-glass>
+            <div class="card-head">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><path d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+              </span>
+              <div>
+                <h3>What does the frontend send during upload?</h3>
+                <p>Three phases: session initialization, chunk transmission, and completion signaling.</p>
+              </div>
+            </div>
+            <dl class="data-list">
+              <div><dt>Session Init</dt><dd>Lookup index, file ID, original size, total chunk count, and encrypted metadata (filename, mime type, size) with its IV.</dd></div>
+              <div><dt>Per Chunk</dt><dd>Encrypted binary payload, chunk IV, and byte size. IVs are not secret, but must accompany their ciphertext.</dd></div>
+              <div><dt>Completion</dt><dd>A completion signal with session ID. The server verifies all chunks are accounted for before enabling downloads.</dd></div>
+            </dl>
+          </article>
+          <article class="glass-card data-card" data-liquid-glass>
+            <div class="card-head">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img"><path d="M12 4v12m0 0 4.5-4.5M12 16l-4.5-4.5M5 20h14"/></svg>
+              </span>
+              <div>
+                <h3>What is exchanged during download?</h3>
+                <p>Acquiring an ephemeral download session, then fetching ciphertext chunk by chunk.</p>
+              </div>
+            </div>
+            <dl class="data-list">
+              <div><dt>Download Init</dt><dd>Browser sends the lookup index. Server returns a download ID, temporary lease token, and encrypted metadata.</dd></div>
+              <div><dt>Per Chunk</dt><dd>Browser presents the lease token for a specific chunk; server streams ciphertext with IV in response headers.</dd></div>
+              <div><dt>After Save</dt><dd>Browser notifies the server "save complete", triggering deletion. Deletion happens after confirmed save, not at download start.</dd></div>
+            </dl>
+          </article>
+        </div>
+
+        <aside class="scope-note">
+          <span class="scope-note-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </span>
+          <p><strong>Local Storage Note:</strong> The sender page saves the latest share code, link, and expiration in localStorage for convenience when reopening windows. Manually entered download codes use sessionStorage. If using a shared computer, close tabs or clear browser data. Watch out for clipboard managers and browser extensions.</p>
+        </aside>
+      </section>
+
+      <section class="about-section" id="download" aria-labelledby="download-title">
+        <div class="section-heading">
+          <p class="eyebrow">04 · Retrieval, Expiration & Deletion</p>
+          <h2 id="download-title">Confirm local save complete before triggering server deletion.</h2>
+          <p>Simply opening a link only checks availability without consuming the share. Actual downloads decrypt and write all chunks to your designated location first; only upon complete success does the frontend instruct the server to delete.</p>
+        </div>
+
+        <article class="glass-card download-flow-card" data-liquid-glass>
+          <ol class="vertical-flow" aria-label="File retrieval process">
+            <li>
+              <span class="vertical-number">1</span>
+              <div><h3>Derive Keys Locally</h3><p>The recipient page computes the AES key and lookup index locally from the URL fragment or pasted 64-char share code—never sending them to the server.</p></div>
+            </li>
+            <li>
+              <span class="vertical-number">2</span>
+              <div><h3>Check Availability</h3><p>The page queries availability using the lookup index without creating a download session or triggering deletion.</p></div>
+            </li>
+            <li>
+              <span class="vertical-number">3</span>
+              <div><h3>Acquire Lease Token</h3><p>Starting a download transitions the session to "downloading" and issues an ephemeral lease token required for each chunk request.</p></div>
+            </li>
+            <li>
+              <span class="vertical-number">4</span>
+              <div><h3>Decrypt & Stream to Disk</h3><p>The browser receives ciphertext and IV, immediately decrypting and writing to disk—either directly, to a temp file, or via ZIP stream for multiple files.</p></div>
+            </li>
+            <li>
+              <span class="vertical-number">5</span>
+              <div><h3>Signal Deletion After Save</h3><p>Only after all file handles close successfully does the frontend issue a deletion call. If cancelled or interrupted, no deletion signal is sent, allowing retries before expiry.</p></div>
+            </li>
+          </ol>
+        </article>
+
+        <div class="cleanup-grid">
+          <article class="glass-card cleanup-card" data-liquid-glass>
+            <span class="cleanup-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </span>
+            <h3>Interrupted Upload or Tab Closed</h3>
+            <p>The frontend sends a best-effort abort notification. If upload fails, the session is cancelled. The server removes incomplete sessions and zero-wipes ciphertext memory.</p>
+            <span class="cleanup-tag">Best-effort notification; network loss unguaranteed</span>
+          </article>
+          <article class="glass-card cleanup-card" data-liquid-glass>
+            <span class="cleanup-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </span>
+            <h3>Download Succeeded</h3>
+            <p>The server revokes the lookup index first, then deletes the session. In-flight chunk streams are marked "pending deletion" and purged immediately upon response end.</p>
+            <span class="cleanup-tag">Deleted only after save confirmation</span>
+          </article>
+          <article class="glass-card cleanup-card" data-liquid-glass>
+            <span class="cleanup-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
+            <h3>Automatic Expiration</h3>
+            <p>Default 30-minute lifespan with at least minute-level cleanup scans. Activity resets idle timers, acting as an idle timeout rather than a hard wall.</p>
+            <span class="cleanup-tag">Wiped upon expiry with memory return attempted</span>
+          </article>
+          <article class="glass-card cleanup-card" data-liquid-glass>
+            <span class="cleanup-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            <h3>Admin "Purge All"</h3>
+            <p>An admin route provides an instant "wipe all data" button, clearing all sessions. Note: this route currently has no auth; restrict access at the network layer when deploying.</p>
+            <span class="cleanup-tag">Global purge across all active shares</span>
+          </article>
+        </div>
+
+        <aside class="scope-note scope-note-warm">
+          <span class="scope-note-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </span>
+          <p><strong>Legacy Fallback Route:</strong> Modern transfers use chunking, but legacy JSON upload/download APIs remain in the codebase as a fallback. The legacy route deletes data immediately upon download start rather than waiting for save confirmation.</p>
+        </aside>
+      </section>
+
+      <section class="about-section" id="memory" aria-labelledby="memory-title">
+        <div class="section-heading">
+          <p class="eyebrow">05 · Understanding Memory from First Principles</p>
+          <h2 id="memory-title">"Unsetting a variable" and "data is erased" are two different things.</h2>
+          <p>This isn't a JavaScript defect; high-level managed languages are designed this way. Understand where data lives in memory before discussing why Garbage Collection cannot give you deterministic zero-wiping control.</p>
+        </div>
+
+        <article class="glass-card memory-basics" data-liquid-glass>
+          <div class="memory-diagram" aria-label="Stack and Heap conceptual diagram">
+            <div class="memory-column memory-stack">
+              <div class="memory-title">
+                <span aria-hidden="true">
+                  <svg viewBox="0 0 24 24" role="img"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </span>
+                <div><h3>Stack: Call Stack</h3><p>Like a stack of task notes</p></div>
+              </div>
+              <div class="stack-frames">
+                <div class="stack-frame stack-frame-top"><strong>Executing Function</strong><span>Local variables & references to large objects</span></div>
+                <div class="stack-frame"><strong>Caller Function</strong><span>Parent scope frame</span></div>
+                <div class="stack-frame"><strong>Earlier Functions</strong><span>Awaiting return</span></div>
+              </div>
+              <p class="memory-caption">When a function is invoked, its stack frame is pushed to the top; upon return, the frame pops immediately.</p>
+            </div>
+            <div class="memory-connector" aria-hidden="true">
+              <span>Reference</span>
+              <svg viewBox="0 0 24 24" role="img" class="connector-arrow"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            </div>
+            <div class="memory-column memory-heap">
+              <div class="memory-title">
+                <span aria-hidden="true">
+                  <svg viewBox="0 0 24 24" role="img"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                </span>
+                <div><h3>Heap: Dynamic Memory</h3><p>Like a reusable warehouse</p></div>
+              </div>
+              <div class="heap-items">
+                <div class="heap-item"><strong>Objects</strong><span>Metadata & session state</span></div>
+                <div class="heap-item heap-item-sensitive"><strong>Byte Buffers</strong><span>Ciphertext, raw data, or copies</span></div>
+                <div class="heap-item"><strong>Other Allocations</strong><span>Waiting for future reuse</span></div>
+              </div>
+              <p class="memory-caption">Large objects and buffers live on the Heap. Stack variables hold references to them, but popping a stack frame does not overwrite Heap bytes.</p>
+            </div>
+          </div>
+        </article>
+
+        <div class="about-grid memory-explain-grid">
+          <article class="glass-card explain-card" data-liquid-glass>
+            <span class="explain-number">1</span>
+            <h3>Function return does not mean data erasure</h3>
+            <p>JavaScript functions allocate objects or byte buffers. When a function finishes, its stack frame vanishes, but heap objects remain alive as long as references exist. Unreferenced objects are merely "eligible for GC"—not zeroed out.</p>
+          </article>
+          <article class="glass-card explain-card" data-liquid-glass>
+            <span class="explain-number">2</span>
+            <h3>GC execution timing is non-deterministic</h3>
+            <p>Node.js runs on V8. Garbage collection runs when V8 decides the time is right. Your application cannot force immediate GC, nor demand that V8 overwrite bytes before recycling.</p>
+          </article>
+          <article class="glass-card explain-card" data-liquid-glass>
+            <span class="explain-number">3</span>
+            <h3>Setting variables to null does not zero memory</h3>
+            <p>Assigning null drops a reference pointer; deleting object keys alters layout. Unless your code explicitly overwrites buffer memory, old bytes sit on the heap until overwritten by future allocations.</p>
+          </article>
+          <article class="glass-card explain-card" data-liquid-glass>
+            <span class="explain-number">4</span>
+            <h3>Heap dump leakage risk</h3>
+            <p>If an attacker gains memory access (host compromise, debug tools, core dump), residual heap bytes can be extracted. For servers, this includes active ciphertext or temporary buffers; for plaintext handling, the risk is severe.</p>
+          </article>
+        </div>
+
+        <article class="glass-card gc-timeline" data-liquid-glass>
+          <div class="card-head">
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            </span>
+            <div>
+              <h3>Typical lifecycle of GC-managed data</h3>
+              <p>Conceptual overview; exact timing varies per execution state.</p>
+            </div>
+          </div>
+          <div class="timeline-steps">
+            <div><span>Active Use</span><p>App holds buffers; data is readable.</p></div>
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true" class="timeline-arrow"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            <div><span>References Lost</span><p>App drops pointers, but bytes are not zeroed.</p></div>
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true" class="timeline-arrow"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            <div><span>Non-Deterministic GC</span><p>V8 reclaims memory later under allocation pressure.</p></div>
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true" class="timeline-arrow"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            <div><span>Future Reuse / Return</span><p>Old contents overwritten or pages returned to OS.</p></div>
+          </div>
+        </article>
+
+        <article class="glass-card cpp-core-card" data-liquid-glass>
+          <div class="cpp-core-intro">
+            <div>
+              <p class="eyebrow">06 · Why the Server Core Runs C++</p>
+              <h2>To guarantee deterministic erasure timestamps for ciphertext.</h2>
+              <p>Node.js handles HTTP, routing, CORS, and validation. But persistent ciphertext containers live inside a C++ native addon—not because C++ is inherently immune to bugs, but because C++ allows explicit zero-overwrite and deallocation semantics bound strictly to object lifecycles.</p>
+            </div>
+            <div class="cpp-badge" aria-label="C++ Native Core">C++<small>Native security core</small></div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-side">
+              <h3>Standard Node.js / V8 Buffers</h3>
+              <ul>
+                <li>Object recycling timing is controlled entirely by V8 GC.</li>
+                <li>Dropping JS references leaves raw bytes intact in memory.</li>
+                <li>Intermediate heap copies have unpredictable lifetimes.</li>
+              </ul>
+            </div>
+            <div class="comparison-divider" aria-hidden="true">vs</div>
+            <div class="comparison-side comparison-side-native">
+              <h3>Drop's C++ Persistent Ciphertext Containers</h3>
+              <ul>
+                <li>Ciphertext, IVs, and metadata use non-copyable secure byte containers.</li>
+                <li>Container reset or destruction executes compiler-barrier zero-fill overwrites.</li>
+                <li>Session deletion, expiry, failure, or purge immediately triggers zeroing and page return requests (glibc malloc_trim).</li>
+              </ul>
+            </div>
+          </div>
+          <div class="native-lifecycle" aria-label="C++ sensitive data lifecycle">
+            <div><span class="native-dot">1</span><strong>Receive</strong><p>Node stream ciphertext is copied into C++ dedicated memory.</p></div>
+            <div><span class="native-dot">2</span><strong>Store</strong><p>Containers are move-only, preventing unnecessary heap copies.</p></div>
+            <div><span class="native-dot">3</span><strong>Stream</strong><p>In-flight downloads use lease refcounts, holding memory until response closes.</p></div>
+            <div><span class="native-dot">4</span><strong>Purge</strong><p>On error, expiry, completion, or purge, bytes are zeroed before free.</p></div>
+          </div>
+          <p class="walkthrough-caption">The C++ core performs no AES operations and never sees plaintext; it strictly manages ciphertext lifecycles. This removes persistent server copies without waiting for V8 GC, though ephemeral socket or OS buffers are beyond native addon scope.</p>
+        </article>
+      </section>
+
+      <article class="glass-card final-summary" data-liquid-glass>
+        <div>
+          <p class="eyebrow">Summary</p>
+          <h2>Decryption stays in your browser; ciphertext is temporarily cached on a short-lived server.</h2>
+          <p>Your browser encrypts with AES-GCM and fresh IVs per chunk; share codes are never transmitted; the server operates on one-way lookup indices; the C++ core actively zero-wipes ciphertext upon session termination. These engineering decisions minimize residual server exposure—though endpoint security and deployment hygiene remain essential.</p>
+        </div>
+        <div class="final-summary-actions">
+          <a class="github-btn" href="https://github.com/JeremySu0818/drop.jeremysu0818.github.io" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg>
+            Frontend Source
+          </a>
+          <a class="github-btn github-btn-secondary" href="https://github.com/JeremySu0818/drop-server" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg>
+            Backend Source
           </a>
         </div>
       </article>
