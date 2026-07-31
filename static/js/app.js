@@ -167,6 +167,16 @@ function acknowledgeRecentUpload() {
   } catch {}
 }
 
+function openCodeModal() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (els.codeModal) {
+    els.codeModal.scrollTop = 0;
+    if (!els.codeModal.open) {
+      els.codeModal.showModal();
+    }
+  }
+}
+
 function restoreSessionState() {
   els.downloadCode.value = readSessionValue(DOWNLOAD_CODE_STORAGE_KEY) || '';
 
@@ -186,7 +196,7 @@ function restoreSessionState() {
     setShareDetails(recentUpload.code, recentUpload.shortToken);
     if (recentUpload.acknowledged !== false) return;
     queueMicrotask(() => {
-      if (!els.codeModal.open) els.codeModal.showModal();
+      openCodeModal();
       showToast('Recovered a recent secure share link from this browser.');
     });
   } catch {
@@ -491,7 +501,7 @@ async function uploadPhoto() {
       throw error;
     }
 
-    els.codeModal.showModal();
+    openCodeModal();
     showToast(
       `Successfully encrypted and uploaded ${filesToUpload.length} file(s). Valid for ${TTL_MINUTES} minutes.`,
     );
