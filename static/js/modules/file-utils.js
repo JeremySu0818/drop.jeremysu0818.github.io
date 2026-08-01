@@ -1,5 +1,5 @@
 export function formatBytes(size) {
-  const units = ["B", "KB", "MB", "GB"];
+  const units = ['B', 'KB', 'MB', 'GB'];
   let value = size;
   let unit = 0;
   while (value >= 1024 && unit < units.length - 1) {
@@ -10,12 +10,12 @@ export function formatBytes(size) {
 }
 
 export function shortenFilename(name, maxLength = 30) {
-  let displayName = String(name || "");
+  let displayName = String(name || '');
   if (displayName.length <= maxLength) {
     return displayName;
   }
 
-  const dotIndex = displayName.lastIndexOf(".");
+  const dotIndex = displayName.lastIndexOf('.');
   if (dotIndex !== -1 && displayName.length - dotIndex <= 6) {
     const ext = displayName.slice(dotIndex);
     const base = displayName.slice(0, dotIndex);
@@ -27,7 +27,7 @@ export function shortenFilename(name, maxLength = 30) {
 
 export function downloadBlob(blob, filename, revokeDelayMs = 10 * 60 * 1000) {
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   document.body.append(link);
@@ -37,11 +37,11 @@ export function downloadBlob(blob, filename, revokeDelayMs = 10 * 60 * 1000) {
 }
 
 export function uniqueZipName(name, usedNames) {
-  const fallbackName = "drop-file";
+  const fallbackName = 'drop-file';
   const cleanName =
     String(name || fallbackName)
-      .replaceAll("\\", "/")
-      .split("/")
+      .replaceAll('\\', '/')
+      .split('/')
       .pop() || fallbackName;
 
   if (!usedNames.has(cleanName)) {
@@ -49,9 +49,9 @@ export function uniqueZipName(name, usedNames) {
     return cleanName;
   }
 
-  const dotIndex = cleanName.lastIndexOf(".");
+  const dotIndex = cleanName.lastIndexOf('.');
   const base = dotIndex > 0 ? cleanName.slice(0, dotIndex) : cleanName;
-  const ext = dotIndex > 0 ? cleanName.slice(dotIndex) : "";
+  const ext = dotIndex > 0 ? cleanName.slice(dotIndex) : '';
   let counter = 2;
   let candidate = `${base}-${counter}${ext}`;
 
