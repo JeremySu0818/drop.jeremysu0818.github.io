@@ -23,6 +23,13 @@ import {
 } from './modules/ui-utils.js';
 import { initPageEffects } from './modules/ui-effects.js';
 
+import {
+  canShareFiles,
+  downloadQrCode,
+  renderQrCode,
+  shareQrCode,
+} from './modules/qr-code.js';
+
 const TTL_MINUTES = 30;
 const PROGRESS_RENDER_INTERVAL_MS = 120;
 const CHUNK_SIZE_BYTES = 64 * 1024 * 1024;
@@ -43,6 +50,9 @@ const els = {
   shareButton: document.querySelector('#shareButton'),
   copyCodeButton: document.querySelector('#copyCodeButton'),
   closeModalButton: document.querySelector('#closeModalButton'),
+  qrCanvas: document.querySelector('#qrCanvas'),
+  downloadQrButton: document.querySelector('#downloadQrButton'),
+  shareQrButton: document.querySelector('#shareQrButton'),
   downloadDestinationModal: document.querySelector('#downloadDestinationModal'),
   chooseDirectoryButton: document.querySelector('#chooseDirectoryButton'),
   cancelDirectoryButton: document.querySelector('#cancelDirectoryButton'),
@@ -71,7 +81,11 @@ function getShareReceiverUrl() {
 
 function setShareDetails(code, shortToken) {
   els.shareCode.value = code;
-  els.shareLink.value = createShortShareUrl(shortToken, getShareReceiverUrl());
+  const shareUrl = createShortShareUrl(shortToken, getShareReceiverUrl());
+  els.shareLink.value = shareUrl;
+  if (els.qrCanvas) {
+    void renderQrCode(els.qrCanvas, shareUrl);
+  }
 }
 
 async function copyText(value) {
@@ -171,6 +185,7 @@ function openCodeModal() {
     els.codeModal.scrollTop = 0;
     if (!els.codeModal.open) {
       els.codeModal.showModal();
+      window.dispatchEvent(new Event('liquid-glass:refresh'));
     }
   }
 }
@@ -598,6 +613,51 @@ function init() {
     } else {
       els.shareButton.style.display = 'none';
     }
+  }
+
+  const supportsQrShare = canShareFiles();
+  if (!supportsQrShare && els.shareQrButton) {
+    els.shareQrButton.style.display = 'none';
+  }
+
+  window.addEventListener('theme:color-sampled', () => {
+    if (els.qrCanvas && els.shareLink?.value) {
+      void renderQrCode(els.qrCanvas, els.shareLink.value);
+    }
+  });
+
+  if (els.downloadQrButton) {
+    els.downloadQrButton.addEventListener('click', async () => {
+      try {
+        await downloadQrCode(els.qrCanvas, 'drop-share-qr.png');
+        acknowledgeRecentUpload();
+        showToast('QR Code image downloaded.');
+      } catch (error) {
+        showToast(error.message || 'Failed to download QR Code image.');
+      }
+    });
+  }
+
+  if (els.shareQrButton) {
+    els.shareQrButton.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        await shareQrCode(
+          els.qrCanvas,
+          {
+            title: 'Drop Secure Share QR Code',
+            text: 'Scan this QR Code to access the encrypted file download.',
+          },
+          'drop-share-qr.png',
+        );
+        acknowledgeRecentUpload();
+        showToast('QR Code image shared.');
+      } catch (error) {
+        if (error?.name !== 'AbortError') {
+          showToast('Unable to share QR Code image.');
+        }
+      }
+    });
   }
 
   els.shareButton.addEventListener('click', async () => {

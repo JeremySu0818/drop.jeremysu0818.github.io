@@ -416,6 +416,85 @@ textarea {
   gap: 10px;
 }
 
+.qr-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 240px;
+  margin: 0 auto;
+}
+
+.qr-canvas-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.qr-canvas-wrapper canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+.qr-overlay-actions {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.qr-container:hover .qr-overlay-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.qr-float-btn {
+  display: grid;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(16, 19, 24, 0.15);
+  background: #ffffff;
+  color: #101318;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.qr-float-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+
+.receive-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.receive-actions .primary-action,
+.receive-actions .secondary-action {
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
 #downloadCode {
   flex-grow: 1;
 }
@@ -469,6 +548,8 @@ textarea:focus {
 
 dialog.glass-card {
   width: min(500px, calc(100% - 32px));
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   margin: auto;
   color: var(--text);
   padding: 32px;

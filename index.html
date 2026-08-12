@@ -185,6 +185,39 @@
           </div>
         </div>
 
+        <div class="share-link-panel">
+          <label>Scan or Share QR Code</label>
+          <div class="qr-container" id="qrContainer">
+            <div class="qr-canvas-wrapper">
+              <canvas id="qrCanvas" width="200" height="200" aria-label="Share QR Code"></canvas>
+            </div>
+            <div class="qr-overlay-actions">
+              <button
+                class="qr-float-btn"
+                id="downloadQrButton"
+                type="button"
+                aria-label="Download QR Code Image"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
+                </svg>
+              </button>
+              <button
+                class="qr-float-btn"
+                id="shareQrButton"
+                type="button"
+                aria-label="Share QR Code Image"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-actions share-actions">
           <button class="secondary-action" id="shareButton" type="button">
             <svg viewBox="0 0 24 24" aria-hidden="true">

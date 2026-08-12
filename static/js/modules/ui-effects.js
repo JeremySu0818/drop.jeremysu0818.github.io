@@ -57,6 +57,7 @@ function setRandomBackground() {
   img.crossOrigin = 'anonymous';
   img.src = background;
   img.onload = () => {
+    window.__currentBgImg = img;
     try {
       const canvas = document.createElement('canvas');
       canvas.width = 100;
@@ -125,6 +126,42 @@ function setRandomBackground() {
           `${chosenX}% center`,
         );
       }
+
+      let maxSat = -1;
+      let bestR = 37;
+      let bestG = 99;
+      let bestB = 235;
+
+      for (let i = 0; i < imgData.length; i += 4) {
+        const r = imgData[i];
+        const g = imgData[i + 1];
+        const b = imgData[i + 2];
+        const a = imgData[i + 3];
+        if (a < 128) continue;
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        if (max < 30 || min > 245) continue;
+
+        const sat = (max - min) / max;
+        if (sat > maxSat) {
+          maxSat = sat;
+          bestR = r;
+          bestG = g;
+          bestB = b;
+        }
+      }
+
+      const toHex = (n) => n.toString(16).padStart(2, '0');
+      const hexColor = `#${toHex(bestR)}${toHex(bestG)}${toHex(bestB)}`;
+      document.documentElement.style.setProperty(
+        '--highest-sat-color',
+        hexColor,
+      );
+      window.__highestSaturationColor = hexColor;
+      window.dispatchEvent(
+        new CustomEvent('theme:color-sampled', { detail: { color: hexColor } }),
+      );
     } catch (e) {}
   };
 }
