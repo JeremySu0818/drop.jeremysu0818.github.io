@@ -72,14 +72,14 @@ function createCompositeExportCanvas(sourceCanvas) {
       drawX = 0;
       drawY = (exportH - drawH) / 2;
     }
-    
+
     // Expand the drawing area by 16px on all sides so the blur doesn't pull in transparent edges
     const margin = 16;
     drawW += margin * 2;
     drawH += margin * 2;
     drawX -= margin;
     drawY -= margin;
-    
+
     // Apply blur to simulate the modal's backdrop-filter (8px)
     ctx.filter = 'blur(8px)';
     ctx.drawImage(bgImg, drawX, drawY, drawW, drawH);
@@ -93,7 +93,7 @@ function createCompositeExportCanvas(sourceCanvas) {
   // 1. dialog::backdrop background (darkens the screen)
   ctx.fillStyle = 'rgba(11, 13, 16, 0.4)';
   ctx.fillRect(0, 0, exportW, exportH);
-  
+
   // 2. dialog.glass-card background
   ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
   ctx.fillRect(0, 0, exportW, exportH);
@@ -127,7 +127,9 @@ export async function renderQrCode(canvas, text, options = {}) {
   const dotColor =
     options.color?.dark ||
     window.__highestSaturationColor ||
-    document.documentElement.style.getPropertyValue('--highest-sat-color').trim() ||
+    document.documentElement.style
+      .getPropertyValue('--highest-sat-color')
+      .trim() ||
     '#101318';
 
   const cellSize = canvasWidth / (size + margin * 2);
