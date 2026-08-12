@@ -129,118 +129,120 @@
       </section>
 
       <dialog class="glass-card code-modal" id="codeModal" data-liquid-glass>
-        <div class="card-head">
-          <span class="icon-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="img">
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </span>
-          <div>
-            <h2>Upload Complete</h2>
-            <p>
-              Share the decryption code first. The secure link is an shortcut.
-            </p>
-          </div>
-        </div>
-
-        <div class="code-panel primary-code-panel">
-          <label for="shareCode">Decryption Code</label>
-          <div class="code-row">
-            <textarea id="shareCode" readonly></textarea>
-            <button
-              class="icon-button"
-              id="copyCodeButton"
-              type="button"
-              title="Copy Decryption Code"
-              aria-label="Copy Decryption Code"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 8h10v12H8z" />
-                <path
-                  d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
-                />
+        <div class="modal-scroll-wrapper">
+          <div class="card-head">
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M20 6 9 17l-5-5" />
               </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="share-link-panel">
-          <label for="shareLink">Secure Share Link</label>
-          <div class="code-row">
-            <input id="shareLink" type="text" readonly spellcheck="false" />
-            <button
-              class="icon-button"
-              id="copyLinkButton"
-              type="button"
-              title="Copy Secure Share Link"
-              aria-label="Copy Secure Share Link"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 8h10v12H8z" />
-                <path
-                  d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="share-link-panel">
-          <label>Scan or Share QR Code</label>
-          <div class="qr-container" id="qrContainer">
-            <div class="qr-canvas-wrapper">
-              <canvas
-                id="qrCanvas"
-                width="200"
-                height="200"
-                aria-label="Share QR Code"
-              ></canvas>
+            </span>
+            <div>
+              <h2>Upload Complete</h2>
+              <p>
+                Share the decryption code first. The secure link is an shortcut.
+              </p>
             </div>
-            <div class="qr-overlay-actions">
+          </div>
+
+          <div class="code-panel primary-code-panel">
+            <label for="shareCode">Decryption Code</label>
+            <div class="code-row">
+              <textarea id="shareCode" readonly></textarea>
               <button
-                class="qr-float-btn"
-                id="downloadQrButton"
+                class="icon-button"
+                id="copyCodeButton"
                 type="button"
-                aria-label="Download QR Code Image"
+                title="Copy Decryption Code"
+                aria-label="Copy Decryption Code"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
-                </svg>
-              </button>
-              <button
-                class="qr-float-btn"
-                id="shareQrButton"
-                type="button"
-                aria-label="Share QR Code Image"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 8h10v12H8z" />
                   <path
-                    d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"
+                    d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
                   />
                 </svg>
               </button>
             </div>
           </div>
-        </div>
 
-        <div class="modal-actions share-actions">
-          <button class="secondary-action" id="shareButton" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"
-              />
-            </svg>
-            Share Link
+          <div class="share-link-panel">
+            <label for="shareLink">Secure Share Link</label>
+            <div class="code-row">
+              <input id="shareLink" type="text" readonly spellcheck="false" />
+              <button
+                class="icon-button"
+                id="copyLinkButton"
+                type="button"
+                title="Copy Secure Share Link"
+                aria-label="Copy Secure Share Link"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 8h10v12H8z" />
+                  <path
+                    d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="share-link-panel">
+            <label>Scan or Share QR Code</label>
+            <div class="qr-container" id="qrContainer">
+              <div class="qr-canvas-wrapper">
+                <canvas
+                  id="qrCanvas"
+                  width="200"
+                  height="200"
+                  aria-label="Share QR Code"
+                ></canvas>
+              </div>
+              <div class="qr-overlay-actions">
+                <button
+                  class="qr-float-btn"
+                  id="downloadQrButton"
+                  type="button"
+                  aria-label="Download QR Code Image"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
+                  </svg>
+                </button>
+                <button
+                  class="qr-float-btn"
+                  id="shareQrButton"
+                  type="button"
+                  aria-label="Share QR Code Image"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions share-actions">
+            <button class="secondary-action" id="shareButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"
+                />
+              </svg>
+              Share Link
+            </button>
+          </div>
+
+          <button
+            class="primary-action close-modal-btn"
+            id="closeModalButton"
+            type="button"
+          >
+            Done
           </button>
         </div>
-
-        <button
-          class="primary-action close-modal-btn"
-          id="closeModalButton"
-          type="button"
-        >
-          Done
-        </button>
       </dialog>
 
       <dialog
@@ -249,35 +251,37 @@
         aria-labelledby="downloadDestinationTitle"
         data-liquid-glass
       >
-        <div class="card-head">
-          <span class="icon-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="img">
-              <path d="M3 7h7l2 2h9v10H3z" />
-            </svg>
-          </span>
-          <div>
-            <h2 id="downloadDestinationTitle">Save Multiple Files</h2>
-            <p>
-              Choose one folder. Every file will be streamed there separately.
-            </p>
+        <div class="modal-scroll-wrapper">
+          <div class="card-head">
+            <span class="icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M3 7h7l2 2h9v10H3z" />
+              </svg>
+            </span>
+            <div>
+              <h2 id="downloadDestinationTitle">Save Multiple Files</h2>
+              <p>
+                Choose one folder. Every file will be streamed there separately.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div class="modal-actions">
-          <button
-            class="primary-action"
-            id="chooseDirectoryButton"
-            type="button"
-          >
-            Choose Folder
-          </button>
-          <button
-            class="secondary-action"
-            id="cancelDirectoryButton"
-            type="button"
-          >
-            Cancel
-          </button>
+          <div class="modal-actions">
+            <button
+              class="primary-action"
+              id="chooseDirectoryButton"
+              type="button"
+            >
+              Choose Folder
+            </button>
+            <button
+              class="secondary-action"
+              id="cancelDirectoryButton"
+              type="button"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </dialog>
 

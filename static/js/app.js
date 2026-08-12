@@ -183,6 +183,8 @@ function openCodeModal() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (els.codeModal) {
     els.codeModal.scrollTop = 0;
+    const wrapper = els.codeModal.querySelector('.modal-scroll-wrapper');
+    if (wrapper) wrapper.scrollTop = 0;
     if (!els.codeModal.open) {
       els.codeModal.showModal();
       window.dispatchEvent(new Event('liquid-glass:refresh'));

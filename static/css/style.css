@@ -30,6 +30,19 @@
   background: transparent;
 }
 
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:vertical:decrement,
+::-webkit-scrollbar-button:vertical:increment,
+::-webkit-scrollbar-button:start,
+::-webkit-scrollbar-button:end {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
 ::-webkit-scrollbar-track {
   background: transparent !important;
   background-color: transparent !important;
@@ -62,6 +75,11 @@ html {
     var(--bg-ink);
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+html:has(dialog[open]),
+body:has(dialog[open]) {
+  overflow: hidden !important;
 }
 
 body {
@@ -312,7 +330,7 @@ svg {
   padding: 14px 18px;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+  box-shadow: none;
 }
 
 .secondary-action {
@@ -547,12 +565,60 @@ textarea:focus {
 }
 
 dialog.glass-card {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   width: min(500px, calc(100% - 32px));
   max-height: calc(100vh - 40px);
-  overflow-y: auto;
-  margin: auto;
+  overflow: hidden !important;
   color: var(--text);
-  padding: 32px;
+  padding: 0 24px;
+}
+
+.modal-scroll-wrapper {
+  width: 100%;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 16px 24px 12px;
+  box-sizing: border-box;
+}
+
+.modal-scroll-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-scroll-wrapper::-webkit-scrollbar-button,
+.modal-scroll-wrapper::-webkit-scrollbar-button:single-button,
+.modal-scroll-wrapper::-webkit-scrollbar-button:vertical:decrement,
+.modal-scroll-wrapper::-webkit-scrollbar-button:vertical:increment,
+.modal-scroll-wrapper::-webkit-scrollbar-button:start,
+.modal-scroll-wrapper::-webkit-scrollbar-button:end {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.modal-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.modal-scroll-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  border-top: 24px solid transparent;
+  border-bottom: 24px solid transparent;
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.modal-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.45);
 }
 
 dialog.glass-card:not([open]) {
