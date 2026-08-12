@@ -605,15 +605,14 @@ dialog.glass-card {
 
 .modal-scroll-wrapper::-webkit-scrollbar-track {
   background: transparent !important;
+  margin-top: 32px;
+  margin-bottom: 32px;
 }
 
 .modal-scroll-wrapper::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.28);
   border-radius: 999px;
-  border-top: 24px solid transparent;
-  border-bottom: 24px solid transparent;
-  border-left: 2px solid transparent;
-  border-right: 2px solid transparent;
+  border: 2px solid transparent;
   background-clip: padding-box;
 }
 

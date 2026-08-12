@@ -151,7 +151,7 @@ export async function renderQrCode(canvas, text, options = {}) {
   }
 }
 
-export function downloadQrCode(canvas, filename = 'drop-share-qr.png') {
+export function downloadQrCode(canvas, filename = 'drop-share-qr-code.png') {
   return new Promise((resolve, reject) => {
     if (!canvas) {
       reject(new Error('Canvas element not found.'));
@@ -188,7 +188,7 @@ export function downloadQrCode(canvas, filename = 'drop-share-qr.png') {
 export function shareQrCode(
   canvas,
   shareData = {},
-  filename = 'drop-share-qr.png',
+  filename = 'drop-share-qr-code.png',
 ) {
   return new Promise((resolve, reject) => {
     if (!canvas) {

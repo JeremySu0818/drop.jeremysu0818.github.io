@@ -631,7 +631,7 @@ function init() {
   if (els.downloadQrButton) {
     els.downloadQrButton.addEventListener('click', async () => {
       try {
-        await downloadQrCode(els.qrCanvas, 'drop-share-qr.png');
+        await downloadQrCode(els.qrCanvas, 'drop-share-qr-code.png');
         acknowledgeRecentUpload();
         showToast('QR Code image downloaded.');
       } catch (error) {
@@ -650,7 +650,7 @@ function init() {
             title: 'Drop Secure Share QR Code',
             text: 'Scan this QR Code to access the encrypted file download.',
           },
-          'drop-share-qr.png',
+          'drop-share-qr-code.png',
         );
         acknowledgeRecentUpload();
         showToast('QR Code image shared.');
