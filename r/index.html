@@ -58,12 +58,25 @@
 
           <p class="receive-error" id="receiveError" role="alert" hidden></p>
 
-          <button class="primary-action" id="downloadButton" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
-            </svg>
-            Decrypt &amp; Download
-          </button>
+          <div class="receive-actions">
+            <button class="primary-action" id="downloadButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
+              </svg>
+              Decrypt &amp; Download
+            </button>
+            <button
+              class="secondary-action"
+              id="downloadZipButton"
+              type="button"
+            >
+              Download as ZIP
+            </button>
+          </div>
+          <p class="download-compatibility-note">
+            ZIP download works with most browsers and is recommended for
+            multiple files.
+          </p>
 
           <p class="receive-security-note">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -78,6 +91,53 @@
             </span>
           </p>
         </article>
+
+        <dialog
+          class="glass-card destination-modal external-browser-modal"
+          id="externalBrowserModal"
+          aria-labelledby="externalBrowserTitle"
+          data-liquid-glass
+        >
+          <div class="modal-scroll-wrapper">
+            <div class="card-head">
+              <span class="icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="img">
+                  <path d="M14 5h5v5m0-5-8 8M5 8v11h11v-5" />
+                </svg>
+              </span>
+              <div>
+                <h2 id="externalBrowserTitle">Continue in Your Browser</h2>
+                <p>
+                  This in-app browser may block file downloads. We tried to open
+                  the complete secure link in your default browser.
+                </p>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button
+                class="primary-action"
+                id="openExternalBrowserButton"
+                type="button"
+              >
+                Open in Browser
+              </button>
+              <button
+                class="secondary-action"
+                id="copyExternalLinkButton"
+                type="button"
+              >
+                Copy Complete Link
+              </button>
+            </div>
+
+            <p class="external-browser-note">
+              If the browser does not open automatically, copy the link and
+              paste it into your preferred browser. No file has been removed
+              from the server.
+            </p>
+          </div>
+        </dialog>
 
         <dialog
           class="glass-card destination-modal"

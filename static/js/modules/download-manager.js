@@ -301,7 +301,12 @@ export function createDownloadManager({
     };
   }
 
-  async function downloadChunkedFiles(key, lookupKey, chunkCrypto) {
+  async function downloadChunkedFiles(
+    key,
+    lookupKey,
+    chunkCrypto,
+    { forceZip = false } = {},
+  ) {
     const payload = await api('/api/chunked-download', {
       method: 'POST',
       body: JSON.stringify({ lookupKey }),
@@ -324,8 +329,11 @@ export function createDownloadManager({
       const multipleFiles = files.length > 1;
       const usedNames = new Set();
       let sink;
-      let writesSeparateFiles = false;
-      if (!multipleFiles) {
+      let writesZip = false;
+      if (forceZip) {
+        sink = await createStreamingZipSink(totalBytes);
+        writesZip = true;
+      } else if (!multipleFiles) {
         sink = await createSingleFileSink(
           files[0].meta.name || 'drop-file',
           files[0].meta.mime || 'application/octet-stream',
@@ -334,7 +342,6 @@ export function createDownloadManager({
       } else if (supportsDirectoryDownloads() && chooseDirectory) {
         try {
           sink = await createDirectoryFileSink(await chooseDirectory());
-          writesSeparateFiles = true;
         } catch (error) {
           if (error instanceof DownloadCancelledError) throw error;
           showToast(
@@ -344,16 +351,18 @@ export function createDownloadManager({
             },
           );
           sink = await createStreamingZipSink(totalBytes);
+          writesZip = true;
         }
       } else {
         sink = await createStreamingZipSink(totalBytes);
+        writesZip = true;
       }
 
       try {
         for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {
           const { encryptedFile, meta } = files[fileIndex];
           const fileOutput = await sink.openFile(
-            multipleFiles && !writesSeparateFiles
+            writesZip
               ? uniqueZipName(meta.name || 'drop-file', usedNames)
               : meta.name || 'drop-file',
             meta.mime || 'application/octet-stream',
@@ -399,7 +408,7 @@ export function createDownloadManager({
                     Math.round((downloadedBytes / totalBytes) * 100),
                   );
             showToast(
-              multipleFiles && !writesSeparateFiles
+              writesZip
                 ? 'Downloading ZIP (' + percent + '%)'
                 : 'Downloading file ' +
                     (fileIndex + 1) +
@@ -436,7 +445,11 @@ export function createDownloadManager({
     }
   }
 
-  async function downloadLegacyFiles(key, lookupKey) {
+  async function downloadLegacyFiles(
+    key,
+    lookupKey,
+    { forceZip = false } = {},
+  ) {
     const payload = await downloadJsonWithProgress(
       '/api/download',
       { lookupKey },
@@ -496,7 +509,7 @@ export function createDownloadManager({
       decryptedCount += 1;
     }
 
-    if (files.length === 1) {
+    if (files.length === 1 && !forceZip) {
       const [file] = files;
       downloadBlob(new Blob([file.bytes], { type: file.mime }), file.name);
     } else {
@@ -531,17 +544,22 @@ export function createDownloadManager({
     });
   }
 
-  async function downloadFiles(code) {
+  async function downloadFiles(code, options = {}) {
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
     let chunkCrypto;
     try {
       try {
         chunkCrypto = await createChunkCrypto(code);
-        return await downloadChunkedFiles(key, lookupKey, chunkCrypto);
+        return await downloadChunkedFiles(
+          key,
+          lookupKey,
+          chunkCrypto,
+          options,
+        );
       } catch (error) {
         if (error.status !== 404 || error.chunkedDownloadStarted) throw error;
-        return await downloadLegacyFiles(key, lookupKey);
+        return await downloadLegacyFiles(key, lookupKey, options);
       }
     } finally {
       chunkCrypto?.terminate();

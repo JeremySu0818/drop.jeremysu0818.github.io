@@ -58,6 +58,7 @@ const els = {
   cancelDirectoryButton: document.querySelector('#cancelDirectoryButton'),
   downloadCode: document.querySelector('#downloadCode'),
   downloadButton: document.querySelector('#downloadButton'),
+  downloadZipButton: document.querySelector('#downloadZipButton'),
   toast: document.querySelector('#toast'),
 };
 
@@ -529,11 +530,14 @@ async function uploadPhoto() {
   }
 }
 
-async function downloadPhoto() {
-  setBusy(els.downloadButton, true);
+async function downloadPhoto({ forceZip = false } = {}) {
+  const activeButton = forceZip ? els.downloadZipButton : els.downloadButton;
+  setBusy(activeButton, true);
+  els.downloadButton.disabled = true;
+  els.downloadZipButton.disabled = true;
   try {
     const [code] = extractCodes(els.downloadCode.value);
-    const result = await downloadManager.downloadFiles(code);
+    const result = await downloadManager.downloadFiles(code, { forceZip });
     els.downloadCode.value = '';
     writeSessionValue(DOWNLOAD_CODE_STORAGE_KEY, '');
     const { fileCount, serverCopyDestroyed } = result;
@@ -552,7 +556,9 @@ async function downloadPhoto() {
   } catch (error) {
     showToast(error.message);
   } finally {
-    setBusy(els.downloadButton, false);
+    setBusy(activeButton, false);
+    els.downloadButton.disabled = false;
+    els.downloadZipButton.disabled = false;
   }
 }
 
@@ -593,7 +599,10 @@ function init() {
   restoreSessionState();
 
   els.uploadButton.addEventListener('click', uploadPhoto);
-  els.downloadButton.addEventListener('click', downloadPhoto);
+  els.downloadButton.addEventListener('click', () => downloadPhoto());
+  els.downloadZipButton.addEventListener('click', () =>
+    downloadPhoto({ forceZip: true }),
+  );
   els.downloadCode.addEventListener('input', () => {
     writeSessionValue(DOWNLOAD_CODE_STORAGE_KEY, els.downloadCode.value);
   });

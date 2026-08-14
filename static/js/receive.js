@@ -3,6 +3,7 @@ import {
   createDownloadManager,
   DownloadCancelledError,
 } from './modules/download-manager.js';
+import { createBrowserHandoff } from './modules/browser-handoff.js';
 import { shortTokenToShareCode } from './modules/share-link.js';
 import { createToastManager, setBusy } from './modules/ui-utils.js';
 import { initPageEffects } from './modules/ui-effects.js';
@@ -14,6 +15,12 @@ const els = {
   description: document.querySelector('#receiveDescription'),
   error: document.querySelector('#receiveError'),
   downloadButton: document.querySelector('#downloadButton'),
+  downloadZipButton: document.querySelector('#downloadZipButton'),
+  externalBrowserModal: document.querySelector('#externalBrowserModal'),
+  openExternalBrowserButton: document.querySelector(
+    '#openExternalBrowserButton',
+  ),
+  copyExternalLinkButton: document.querySelector('#copyExternalLinkButton'),
   downloadDestinationModal: document.querySelector('#downloadDestinationModal'),
   chooseDirectoryButton: document.querySelector('#chooseDirectoryButton'),
   cancelDirectoryButton: document.querySelector('#cancelDirectoryButton'),
@@ -74,6 +81,13 @@ const downloadManager = createDownloadManager({
   chooseDirectory: chooseDownloadDirectory,
 });
 
+const browserHandoff = createBrowserHandoff({
+  dialog: els.externalBrowserModal,
+  openButton: els.openExternalBrowserButton,
+  copyButton: els.copyExternalLinkButton,
+  showToast,
+});
+
 async function readShareCodeFromLocation() {
   const token = window.location.hash.slice(1);
   if (!token) {
@@ -90,11 +104,13 @@ function showInvalidLink(error) {
   els.error.textContent = error.message;
   els.error.hidden = false;
   els.downloadButton.disabled = true;
+  els.downloadZipButton.disabled = true;
 }
 
 function showUnavailableLink(error) {
   shareCode = '';
   els.downloadButton.disabled = true;
+  els.downloadZipButton.disabled = true;
 
   if (error.status === 409) {
     els.title.textContent = 'Upload still in progress';
@@ -132,29 +148,42 @@ async function loadShareLink() {
   }
 
   els.downloadButton.disabled = true;
+  els.downloadZipButton.disabled = true;
   els.title.textContent = 'Checking secure link';
   els.description.textContent =
     'Confirming that the encrypted file is still available.';
   els.error.hidden = true;
+  if (browserHandoff.requiresHandoff) {
+    els.title.textContent = 'Open in your browser to download';
+    els.description.textContent =
+      'This browser cannot provide a reliable file download. The encrypted server copy has not been claimed and will remain available until expiry.';
+    browserHandoff.present();
+    return;
+  }
+
   try {
     await downloadManager.checkAvailability(shareCode);
     els.title.textContent = 'Encrypted file ready';
     els.description.textContent =
       'Your file stays encrypted until it is downloaded in this browser. Opening this link alone does not claim or delete it.';
     els.downloadButton.disabled = false;
+    els.downloadZipButton.disabled = false;
   } catch (error) {
     showUnavailableLink(error);
   }
 }
 
-async function downloadSharedFiles() {
+async function downloadSharedFiles({ forceZip = false } = {}) {
   if (!shareCode) return;
 
   let completed = false;
-  setBusy(els.downloadButton, true);
+  const activeButton = forceZip ? els.downloadZipButton : els.downloadButton;
+  setBusy(activeButton, true);
+  els.downloadButton.disabled = true;
+  els.downloadZipButton.disabled = true;
   try {
     const { fileCount, serverCopyDestroyed } =
-      await downloadManager.downloadFiles(shareCode);
+      await downloadManager.downloadFiles(shareCode, { forceZip });
     completed = true;
     els.title.textContent = 'Download complete';
     els.description.textContent = serverCopyDestroyed
@@ -172,10 +201,9 @@ async function downloadSharedFiles() {
   } catch (error) {
     showToast(error.message);
   } finally {
-    setBusy(els.downloadButton, false);
-    if (completed) {
-      els.downloadButton.disabled = true;
-    }
+    setBusy(activeButton, false);
+    els.downloadButton.disabled = completed;
+    els.downloadZipButton.disabled = completed;
   }
 }
 
@@ -183,7 +211,10 @@ function init() {
   initPageEffects(createLiquidGlass);
   downloadManager.cleanupStaleDownloadFiles();
   void loadShareLink();
-  els.downloadButton.addEventListener('click', downloadSharedFiles);
+  els.downloadButton.addEventListener('click', () => downloadSharedFiles());
+  els.downloadZipButton.addEventListener('click', () =>
+    downloadSharedFiles({ forceZip: true }),
+  );
 }
 
 init();

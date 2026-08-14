@@ -513,6 +513,27 @@ textarea {
   gap: 10px;
 }
 
+.download-compatibility-note {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.79rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.external-browser-modal .modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.external-browser-note {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
 #downloadCode {
   flex-grow: 1;
 }
@@ -689,7 +710,7 @@ dialog::backdrop {
   line-height: 0.98;
 }
 
-.receive-card .primary-action {
+.receive-card > .primary-action {
   margin-top: 24px;
 }
 
@@ -2206,4 +2227,3 @@ dialog::backdrop {
     margin-top: 16px;
   }
 }
-
