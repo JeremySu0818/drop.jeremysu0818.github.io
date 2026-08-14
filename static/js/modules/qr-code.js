@@ -1,4 +1,5 @@
 import QRCode from 'https://esm.sh/qrcode@1.5.4';
+import { t } from '../i18n.js';
 
 /**
  * Checks if the current browser environment supports sharing image files via Web Share API.
@@ -145,13 +146,13 @@ export async function renderQrCode(canvas, text, options = {}) {
 export function downloadQrCode(canvas, filename = 'drop-share-qr-code.png') {
   return new Promise((resolve, reject) => {
     if (!canvas) {
-      reject(new Error('Canvas element not found.'));
+      reject(new Error(t('runtime.canvasNotFound')));
       return;
     }
     const exportCanvas = createCompositeExportCanvas(canvas) || canvas;
     exportCanvas.toBlob((blob) => {
       if (!blob) {
-        reject(new Error('Failed to create QR code image file.'));
+        reject(new Error(t('runtime.qrImageCreateFailed')));
         return;
       }
       const url = URL.createObjectURL(blob);
@@ -183,22 +184,20 @@ export function shareQrCode(
 ) {
   return new Promise((resolve, reject) => {
     if (!canvas) {
-      reject(new Error('Canvas element not found.'));
+      reject(new Error(t('runtime.canvasNotFound')));
       return;
     }
     const exportCanvas = createCompositeExportCanvas(canvas) || canvas;
     exportCanvas.toBlob(async (blob) => {
       if (!blob) {
-        reject(new Error('Failed to create QR code image file.'));
+        reject(new Error(t('runtime.qrImageCreateFailed')));
         return;
       }
       const file = new File([blob], filename, { type: 'image/png' });
       try {
         await navigator.share({
-          title: shareData.title || 'Drop Secure Share QR Code',
-          text:
-            shareData.text ||
-            'Scan this QR Code to access the encrypted file download.',
+          title: shareData.title || t('runtime.qrShareTitle'),
+          text: shareData.text || t('runtime.qrShareText'),
           files: [file],
         });
         resolve();

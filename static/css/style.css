@@ -802,6 +802,30 @@ dialog::backdrop {
   gap: 8px;
 }
 
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+}
+
+.language-switcher-select {
+  width: min(132px, 27vw);
+  min-height: 34px;
+  padding: 6px 28px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.28);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.language-switcher-select:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
 .nav-link {
   display: inline-flex;
   align-items: center;
@@ -956,8 +980,22 @@ dialog::backdrop {
   }
 
   .nav-link {
-    padding: 6px 14px;
-    font-size: 0.85rem;
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .header-nav {
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .language-switcher-select {
+    width: clamp(72px, 23vw, 96px);
+    min-height: 30px;
+    padding: 5px 18px 5px 7px;
+    font-size: 0.76rem;
+    white-space: nowrap;
   }
 
   .brand-strip,

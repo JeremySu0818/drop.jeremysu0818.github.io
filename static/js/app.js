@@ -22,6 +22,7 @@ import {
   summarizeSelectedFiles,
 } from './modules/ui-utils.js';
 import { initPageEffects } from './modules/ui-effects.js';
+import { initI18n, t } from './i18n.js';
 
 import {
   canShareFiles,
@@ -104,7 +105,7 @@ async function copyText(value) {
   fallback.select();
   const copied = document.execCommand('copy');
   fallback.remove();
-  if (!copied) throw new Error('Unable to access the clipboard.');
+  if (!copied) throw new Error(t('runtime.clipboardUnavailable'));
 }
 
 function extractCodes(value) {
@@ -112,10 +113,10 @@ function extractCodes(value) {
   const codes = normalized.match(/\b[a-fA-F0-9]{64}\b/g) || [];
   const uniqueCodes = [...new Set(codes.map((code) => code.toLowerCase()))];
   if (uniqueCodes.length === 0) {
-    throw new Error('Invalid decryption code format.');
+    throw new Error(t('runtime.invalidDecryptionCode'));
   }
   if (uniqueCodes.length > 1) {
-    throw new Error('Only one decryption code is supported per download.');
+    throw new Error(t('runtime.oneDecryptionCode'));
   }
   return uniqueCodes;
 }
@@ -213,7 +214,7 @@ function restoreSessionState() {
     if (recentUpload.acknowledged !== false) return;
     queueMicrotask(() => {
       openCodeModal();
-      showToast('Recovered a recent secure share link from this browser.');
+      showToast(t('runtime.recoveredRecentLink'));
     });
   } catch {
     writeLocalValue(RECENT_UPLOAD_STORAGE_KEY, '');
@@ -272,7 +273,7 @@ async function api(path, options = {}) {
   const body = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const error = new Error(body.error || 'Server response failed.');
+    const error = new Error(body.error || t('runtime.serverResponseFailed'));
     error.status = response.status;
     throw error;
   }
@@ -287,14 +288,16 @@ function uploadBinaryWithProgress(path, bytes, iv, onProgress) {
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     xhr.setRequestHeader('X-Chunk-IV', iv);
     xhr.upload.onprogress = onProgress;
-    xhr.onerror = () => reject(new Error('Network error while uploading.'));
+    xhr.onerror = () => reject(new Error(t('runtime.networkUploadError')));
     xhr.onload = () => {
       let body = {};
       try {
         body = JSON.parse(xhr.responseText || '{}');
       } catch {}
       if (xhr.status < 200 || xhr.status >= 300) {
-        const error = new Error(body.error || 'Server response failed.');
+        const error = new Error(
+          body.error || t('runtime.serverResponseFailed'),
+        );
         error.status = xhr.status;
         reject(error);
         return;
@@ -344,8 +347,8 @@ async function verifyFileReadable(file) {
   } catch (error) {
     const reason =
       error?.name === 'NotReadableError'
-        ? 'The browser lost permission to read it. Choose the file again from local storage and keep it there until the upload finishes.'
-        : error?.message || 'The file could not be read.';
+        ? t('runtime.filePermissionLost')
+        : error?.message || t('runtime.fileReadError');
     throw new Error(`${file.name}: ${reason}`);
   }
 }
@@ -380,7 +383,7 @@ async function reserveUploadSession(files) {
 
 async function uploadPhoto() {
   if (selectedFiles.length === 0) {
-    showToast('Please select files to upload first.');
+    showToast(t('runtime.selectFilesFirst'));
     return;
   }
 
@@ -418,14 +421,18 @@ async function uploadPhoto() {
       );
 
       showToast(
-        `Uploading ${completedFiles}/${totalFiles} (${overallPercent}%)`,
+        t('runtime.uploadProgress', {
+          completed: completedFiles,
+          total: totalFiles,
+          percent: overallPercent,
+        }),
         { persist: true },
       );
     };
 
-    showToast('Checking file access...', { persist: true });
+    showToast(t('runtime.checkingFileAccess'), { persist: true });
     await Promise.all(filesToUpload.map(verifyFileReadable));
-    showToast('Preparing a secure share link...', { persist: true });
+    showToast(t('runtime.preparingShareLink'), { persist: true });
     const reserved = await reserveUploadSession(filesToUpload);
     const { code, session, shortToken } = reserved;
     chunkCrypto = reserved.uploadCrypto;
@@ -436,9 +443,16 @@ async function uploadPhoto() {
         method: 'DELETE',
       }).catch(() => {});
       activeUploadId = '';
-      throw new Error('Server and browser chunk sizes do not match.');
+      throw new Error(t('runtime.chunkSizeMismatch'));
     }
-    showToast(`Uploading 0/${totalFiles} (0%)`, { persist: true });
+    showToast(
+      t('runtime.uploadProgress', {
+        completed: 0,
+        total: totalFiles,
+        percent: 0,
+      }),
+      { persist: true },
+    );
 
     try {
       const chunkTasks = [];
@@ -470,8 +484,8 @@ async function uploadPhoto() {
           } catch (error) {
             const detail =
               error?.name === 'NotReadableError'
-                ? 'The browser lost permission to read the source file. Keep it on local storage and select it again.'
-                : error?.message || 'Unable to read source file.';
+                ? t('runtime.sourceFilePermissionLost')
+                : error?.message || t('runtime.sourceFileReadError');
             throw new Error(`${file.name}: ${detail}`);
           }
           const sourceLength = sourceBytes.byteLength;
@@ -520,7 +534,10 @@ async function uploadPhoto() {
 
     openCodeModal();
     showToast(
-      `Successfully encrypted and uploaded ${filesToUpload.length} file(s). Valid for ${TTL_MINUTES} minutes.`,
+      t('runtime.uploadSucceeded', {
+        count: filesToUpload.length,
+        minutes: TTL_MINUTES,
+      }),
     );
   } catch (error) {
     showToast(error.message);
@@ -544,14 +561,11 @@ async function downloadPhoto({ forceZip = false } = {}) {
     showToast(
       serverCopyDestroyed
         ? fileCount === 1
-          ? 'File downloaded successfully. Server copy destroyed.'
-          : 'Successfully downloaded ' +
-            fileCount +
-            ' files. Server copy destroyed.'
+          ? t('runtime.fileDownloadedServerDestroyed')
+          : t('runtime.filesDownloadedServerDestroyed', { count: fileCount })
         : fileCount === 1
-          ? 'File saved. Server cleanup could not be confirmed; retry remains possible until expiry.'
-          : fileCount +
-            ' files saved. Server cleanup could not be confirmed; retry remains possible until expiry.',
+          ? t('runtime.fileSavedCleanupUnconfirmed')
+          : t('runtime.filesSavedCleanupUnconfirmed', { count: fileCount }),
     );
   } catch (error) {
     showToast(error.message);
@@ -584,7 +598,7 @@ function bindDropZone() {
   els.dropZone.addEventListener('drop', (event) => {
     const files = filterMediaFiles([...event.dataTransfer.files]);
     if (files.length === 0) {
-      showToast('Please drag and drop valid files.');
+      showToast(t('runtime.dragValidFiles'));
       return;
     }
 
@@ -610,7 +624,7 @@ function init() {
     try {
       await copyText(els.shareLink.value);
       acknowledgeRecentUpload();
-      showToast('Secure share link copied to clipboard.');
+      showToast(t('runtime.shareLinkCopied'));
     } catch (error) {
       showToast(error.message);
     }
@@ -642,9 +656,9 @@ function init() {
       try {
         await downloadQrCode(els.qrCanvas, 'drop-share-qr-code.png');
         acknowledgeRecentUpload();
-        showToast('QR Code image downloaded.');
+        showToast(t('runtime.qrDownloaded'));
       } catch (error) {
-        showToast(error.message || 'Failed to download QR Code image.');
+        showToast(error.message || t('runtime.qrDownloadFailed'));
       }
     });
   }
@@ -656,16 +670,16 @@ function init() {
         await shareQrCode(
           els.qrCanvas,
           {
-            title: 'Drop Secure Share QR Code',
-            text: 'Scan this QR Code to access the encrypted file download.',
+            title: t('runtime.qrShareTitle'),
+            text: t('runtime.qrShareText'),
           },
           'drop-share-qr-code.png',
         );
         acknowledgeRecentUpload();
-        showToast('QR Code image shared.');
+        showToast(t('runtime.qrShared'));
       } catch (error) {
         if (error?.name !== 'AbortError') {
-          showToast('Unable to share QR Code image.');
+          showToast(t('runtime.qrShareFailed'));
         }
       }
     });
@@ -675,21 +689,21 @@ function init() {
     try {
       if (supportsWebShare) {
         await navigator.share({
-          title: 'Secure file download',
-          text: 'Open this secure link to decrypt and download the shared file.',
+          title: t('runtime.secureDownloadTitle'),
+          text: t('runtime.secureDownloadText'),
           url: els.shareLink.value,
         });
         acknowledgeRecentUpload();
-        showToast('Secure link ready to share.');
+        showToast(t('runtime.shareLinkReady'));
         return;
       }
 
       await copyText(els.shareLink.value);
       acknowledgeRecentUpload();
-      showToast('Secure share link copied to clipboard.');
+      showToast(t('runtime.shareLinkCopied'));
     } catch (error) {
       if (error?.name !== 'AbortError') {
-        showToast('Unable to share the link. Please copy it instead.');
+        showToast(t('runtime.shareLinkFailed'));
       }
     }
   });
@@ -698,7 +712,7 @@ function init() {
     try {
       await copyText(els.shareCode.value);
       acknowledgeRecentUpload();
-      showToast('Decryption code copied to clipboard.');
+      showToast(t('runtime.decryptionCodeCopied'));
     } catch (error) {
       showToast(error.message);
     }
@@ -723,4 +737,5 @@ function init() {
   });
 }
 
+await initI18n();
 init();

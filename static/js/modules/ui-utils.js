@@ -1,4 +1,5 @@
 import { formatBytes, shortenFilename } from './file-utils.js';
+import { t } from '../i18n.js';
 
 const DEFAULT_FILE_META = 'Supports all file formats';
 
@@ -67,7 +68,7 @@ export function setBusy(button, busy) {
 
 export function summarizeSelectedFiles(files) {
   if (files.length === 0) {
-    return DEFAULT_FILE_META;
+    return t('home.7');
   }
 
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
@@ -76,7 +77,10 @@ export function summarizeSelectedFiles(files) {
     return `${shortenFilename(file.name)} · ${formatBytes(file.size)}`;
   }
 
-  return `Selected ${files.length} file(s) · ${formatBytes(totalSize)}`;
+  return t('runtime.filesSelected', {
+    count: files.length,
+    size: formatBytes(totalSize),
+  });
 }
 
 export function filterMediaFiles(files) {

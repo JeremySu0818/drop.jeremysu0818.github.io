@@ -1,4 +1,5 @@
 import InAppSpy from 'https://esm.sh/inapp-spy@5.0.10';
+import { t } from '../i18n.js';
 
 const HANDOFF_PARAMETER = 'external-handoff';
 
@@ -12,7 +13,8 @@ function supportsBrowserDownloads() {
 }
 
 function isAndroidPlatform() {
-  const platform = navigator.userAgentData?.platform || navigator.platform || '';
+  const platform =
+    navigator.userAgentData?.platform || navigator.platform || '';
   return /android/i.test(platform + ' ' + navigator.userAgent);
 }
 
@@ -30,8 +32,7 @@ function externalUrl() {
 
 function androidIntentUrl(url) {
   const scheme = url.protocol.slice(0, -1);
-  const data =
-    '//' + url.host + url.pathname + url.search + url.hash;
+  const data = '//' + url.host + url.pathname + url.search + url.hash;
   return (
     'intent:' +
     data +
@@ -77,7 +78,7 @@ async function copyCompleteLink() {
   fallback.select();
   const copied = document.execCommand('copy');
   fallback.remove();
-  if (!copied) throw new Error('Unable to copy the secure link.');
+  if (!copied) throw new Error(t('runtime.unableToCopySecureLink'));
 }
 
 export function createBrowserHandoff({
@@ -87,8 +88,7 @@ export function createBrowserHandoff({
   showToast = () => {},
 }) {
   const detection = InAppSpy();
-  const requiresHandoff =
-    detection.isInApp || !supportsBrowserDownloads();
+  const requiresHandoff = detection.isInApp || !supportsBrowserDownloads();
   const handoffAlreadyAttempted =
     new URL(window.location.href).searchParams.get(HANDOFF_PARAMETER) === '1';
 
@@ -96,7 +96,7 @@ export function createBrowserHandoff({
   copyButton.addEventListener('click', async () => {
     try {
       await copyCompleteLink();
-      showToast('Complete secure link copied. Paste it into your browser.');
+      showToast(t('runtime.completeLinkCopied'));
     } catch (error) {
       showToast(error.message);
     }

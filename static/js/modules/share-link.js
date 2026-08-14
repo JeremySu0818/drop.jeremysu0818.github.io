@@ -1,4 +1,5 @@
 import { bytesToHex, sha256Bytes } from './crypto-utils.js';
+import { t } from '../i18n.js';
 
 const SHORT_TOKEN_PATTERN = /^[A-Za-z0-9]{22}$/;
 const TOKEN_ALPHABET =
@@ -10,7 +11,7 @@ const UNBIASED_BYTE_LIMIT =
 function normalizeShortToken(token) {
   const normalized = String(token || '').trim();
   if (!SHORT_TOKEN_PATTERN.test(normalized)) {
-    throw new Error('This secure link is incomplete or invalid.');
+    throw new Error(t('runtime.secureLinkInvalid'));
   }
   return normalized;
 }

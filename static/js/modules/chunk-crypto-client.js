@@ -1,3 +1,5 @@
+import { t } from '../i18n.js';
+
 export async function createChunkCrypto(code) {
   const worker = new Worker(
     new URL('../workers/chunk-crypto-worker.js', import.meta.url),
@@ -18,7 +20,7 @@ export async function createChunkCrypto(code) {
     }
   });
   worker.addEventListener('error', (event) => {
-    const error = new Error(event.message || 'Chunk crypto worker failed.');
+    const error = new Error(event.message || t('runtime.cryptoWorkerFailed'));
     for (const request of pending.values()) request.reject(error);
     pending.clear();
   });
@@ -26,7 +28,7 @@ export async function createChunkCrypto(code) {
   const call = (operation, payload = {}, transfer = []) =>
     new Promise((resolve, reject) => {
       if (stopped) {
-        reject(new Error('Chunk crypto worker is no longer available.'));
+        reject(new Error(t('runtime.cryptoWorkerUnavailable')));
         return;
       }
       const id = nextId;
@@ -61,7 +63,7 @@ export async function createChunkCrypto(code) {
       if (stopped) return;
       stopped = true;
       worker.terminate();
-      const error = new Error('Chunk crypto worker was terminated.');
+      const error = new Error(t('runtime.cryptoWorkerTerminated'));
       for (const request of pending.values()) request.reject(error);
       pending.clear();
     },

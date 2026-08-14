@@ -7,6 +7,7 @@ import { createBrowserHandoff } from './modules/browser-handoff.js';
 import { shortTokenToShareCode } from './modules/share-link.js';
 import { createToastManager, setBusy } from './modules/ui-utils.js';
 import { initPageEffects } from './modules/ui-effects.js';
+import { initI18n, t } from './i18n.js';
 
 const SERVER_URL = 'https://drop-server.jeremytw.qzz.io';
 
@@ -94,16 +95,15 @@ const browserHandoff = createBrowserHandoff({
 async function readShareCodeFromLocation() {
   const token = window.location.hash.slice(1);
   if (!token) {
-    throw new Error('This secure link is missing its encrypted access key.');
+    throw new Error(t('runtime.missingAccessKey'));
   }
   return shortTokenToShareCode(token);
 }
 
 function showInvalidLink(error) {
   shareCode = '';
-  els.title.textContent = 'This link is not ready';
-  els.description.textContent =
-    'Ask the sender to copy the complete secure link and send it again.';
+  els.title.textContent = t('receive.linkNotReady');
+  els.description.textContent = t('receive.sendCompleteLinkAgain');
   els.error.textContent = error.message;
   els.error.hidden = false;
   els.downloadButton.disabled = true;
@@ -124,29 +124,24 @@ function showUnavailableLink(error) {
   }
 
   if (error.status === 409) {
-    els.title.textContent = 'Upload still in progress';
-    els.description.textContent =
-      'Ask the sender to finish the upload, then open this link again.';
+    els.title.textContent = t('receive.uploadInProgress');
+    els.description.textContent = t('receive.finishUploadThenRetry');
     els.error.textContent = error.message;
     els.error.hidden = false;
     return;
   }
 
   if (error.status === 404 || error.status === 410) {
-    els.title.textContent = 'This link has expired';
-    els.description.textContent =
-      'The file is no longer available. It may have expired or already been downloaded.';
-    els.error.textContent =
-      'The shared file has expired or is no longer available.';
+    els.title.textContent = t('receive.linkExpired');
+    els.description.textContent = t('receive.fileNoLongerAvailable');
+    els.error.textContent = t('receive.sharedFileExpired');
     els.error.hidden = false;
     return;
   }
 
-  els.title.textContent = 'Unable to check this link';
-  els.description.textContent =
-    'The file was not downloaded. Check your connection and reload this page.';
-  els.error.textContent =
-    error.message || 'Unable to contact the download server.';
+  els.title.textContent = t('receive.unableToCheckLink');
+  els.description.textContent = t('receive.checkConnectionReload');
+  els.error.textContent = error.message || t('receive.unableToContactServer');
   els.error.hidden = false;
 }
 
@@ -164,14 +159,12 @@ async function loadShareLink() {
   if (els.downloadCompatibilityNote) {
     els.downloadCompatibilityNote.hidden = true;
   }
-  els.title.textContent = 'Checking secure link';
-  els.description.textContent =
-    'Confirming that the encrypted file is still available.';
+  els.title.textContent = t('receive.checkingLink');
+  els.description.textContent = t('receive.confirmingAvailability');
   els.error.hidden = true;
   if (browserHandoff.requiresHandoff) {
-    els.title.textContent = 'Open in your browser to download';
-    els.description.textContent =
-      'This browser cannot provide a reliable file download. The encrypted server copy has not been claimed and will remain available until expiry.';
+    els.title.textContent = t('receive.openInBrowser');
+    els.description.textContent = t('receive.browserDownloadUnavailable');
     browserHandoff.present();
     return;
   }
@@ -187,11 +180,11 @@ async function loadShareLink() {
     const showZipOption = fileCount === null || isMultiple;
 
     els.title.textContent = isMultiple
-      ? `${fileCount} encrypted files ready`
-      : 'Encrypted file ready';
+      ? t('receive.encryptedFilesReady', { count: fileCount })
+      : t('receive.encryptedFileReady');
     els.description.textContent = isMultiple
-      ? 'Your files stay encrypted until they are downloaded in this browser. Opening this link alone does not claim or delete them.'
-      : 'Your file stays encrypted until it is downloaded in this browser. Opening this link alone does not claim or delete it.';
+      ? t('receive.filesRemainEncrypted')
+      : t('receive.fileRemainsEncrypted');
     els.downloadButton.disabled = false;
     els.downloadZipButton.hidden = !showZipOption;
     els.downloadZipButton.disabled = !showZipOption;
@@ -215,18 +208,18 @@ async function downloadSharedFiles({ forceZip = false } = {}) {
     const { fileCount, serverCopyDestroyed } =
       await downloadManager.downloadFiles(shareCode, { forceZip });
     completed = true;
-    els.title.textContent = 'Download complete';
+    els.title.textContent = t('receive.downloadComplete');
     els.description.textContent = serverCopyDestroyed
       ? fileCount === 1
-        ? 'Your file was saved and the server copy was destroyed.'
-        : 'Your files were saved and the server copy was destroyed.'
-      : 'Your file was saved. Server cleanup could not be confirmed, so this link may remain usable until expiry.';
+        ? t('receive.fileSavedServerDestroyed')
+        : t('receive.filesSavedServerDestroyed')
+      : t('receive.fileSavedCleanupUnconfirmed');
     showToast(
       serverCopyDestroyed
         ? fileCount === 1
-          ? 'File downloaded successfully. Server copy destroyed.'
-          : 'Files downloaded successfully. Server copy destroyed.'
-        : 'Files saved. Server cleanup could not be confirmed.',
+          ? t('receive.fileDownloadedServerDestroyed')
+          : t('receive.filesDownloadedServerDestroyed')
+        : t('receive.filesSavedCleanupUnconfirmed'),
     );
   } catch (error) {
     showToast(error.message);
@@ -251,4 +244,5 @@ function init() {
   );
 }
 
+await initI18n();
 init();
