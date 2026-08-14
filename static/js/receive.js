@@ -16,6 +16,9 @@ const els = {
   error: document.querySelector('#receiveError'),
   downloadButton: document.querySelector('#downloadButton'),
   downloadZipButton: document.querySelector('#downloadZipButton'),
+  downloadCompatibilityNote: document.querySelector(
+    '#downloadCompatibilityNote',
+  ),
   externalBrowserModal: document.querySelector('#externalBrowserModal'),
   openExternalBrowserButton: document.querySelector(
     '#openExternalBrowserButton',
@@ -105,12 +108,20 @@ function showInvalidLink(error) {
   els.error.hidden = false;
   els.downloadButton.disabled = true;
   els.downloadZipButton.disabled = true;
+  els.downloadZipButton.hidden = true;
+  if (els.downloadCompatibilityNote) {
+    els.downloadCompatibilityNote.hidden = true;
+  }
 }
 
 function showUnavailableLink(error) {
   shareCode = '';
   els.downloadButton.disabled = true;
   els.downloadZipButton.disabled = true;
+  els.downloadZipButton.hidden = true;
+  if (els.downloadCompatibilityNote) {
+    els.downloadCompatibilityNote.hidden = true;
+  }
 
   if (error.status === 409) {
     els.title.textContent = 'Upload still in progress';
@@ -149,6 +160,10 @@ async function loadShareLink() {
 
   els.downloadButton.disabled = true;
   els.downloadZipButton.disabled = true;
+  els.downloadZipButton.hidden = true;
+  if (els.downloadCompatibilityNote) {
+    els.downloadCompatibilityNote.hidden = true;
+  }
   els.title.textContent = 'Checking secure link';
   els.description.textContent =
     'Confirming that the encrypted file is still available.';
@@ -162,12 +177,27 @@ async function loadShareLink() {
   }
 
   try {
-    await downloadManager.checkAvailability(shareCode);
-    els.title.textContent = 'Encrypted file ready';
-    els.description.textContent =
-      'Your file stays encrypted until it is downloaded in this browser. Opening this link alone does not claim or delete it.';
+    const status = await downloadManager.checkAvailability(shareCode);
+    const fileCount =
+      Number.isInteger(status?.fileCount) && status.fileCount > 0
+        ? status.fileCount
+        : null;
+    const isMultiple = fileCount > 1;
+
+    const showZipOption = fileCount === null || isMultiple;
+
+    els.title.textContent = isMultiple
+      ? `${fileCount} encrypted files ready`
+      : 'Encrypted file ready';
+    els.description.textContent = isMultiple
+      ? 'Your files stay encrypted until they are downloaded in this browser. Opening this link alone does not claim or delete them.'
+      : 'Your file stays encrypted until it is downloaded in this browser. Opening this link alone does not claim or delete it.';
     els.downloadButton.disabled = false;
-    els.downloadZipButton.disabled = false;
+    els.downloadZipButton.hidden = !showZipOption;
+    els.downloadZipButton.disabled = !showZipOption;
+    if (els.downloadCompatibilityNote) {
+      els.downloadCompatibilityNote.hidden = !showZipOption;
+    }
   } catch (error) {
     showUnavailableLink(error);
   }
@@ -203,7 +233,11 @@ async function downloadSharedFiles({ forceZip = false } = {}) {
   } finally {
     setBusy(activeButton, false);
     els.downloadButton.disabled = completed;
-    els.downloadZipButton.disabled = completed;
+    if (els.downloadZipButton.hidden) {
+      els.downloadZipButton.disabled = true;
+    } else {
+      els.downloadZipButton.disabled = completed;
+    }
   }
 }
 

@@ -59,7 +59,7 @@
           <p class="receive-error" id="receiveError" role="alert" hidden></p>
 
           <div class="receive-actions">
-            <button class="primary-action" id="downloadButton" type="button">
+            <button class="primary-action" id="downloadButton" type="button" disabled>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 20h14" />
               </svg>
@@ -69,11 +69,17 @@
               class="secondary-action"
               id="downloadZipButton"
               type="button"
+              hidden
+              disabled
             >
               Download as ZIP
             </button>
           </div>
-          <p class="download-compatibility-note">
+          <p
+            class="download-compatibility-note"
+            id="downloadCompatibilityNote"
+            hidden
+          >
             ZIP download works with most browsers and is recommended for
             multiple files.
           </p>

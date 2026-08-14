@@ -73,14 +73,12 @@ function createCompositeExportCanvas(sourceCanvas) {
       drawY = (exportH - drawH) / 2;
     }
 
-    // Expand the drawing area by 16px on all sides so the blur doesn't pull in transparent edges
     const margin = 16;
     drawW += margin * 2;
     drawH += margin * 2;
     drawX -= margin;
     drawY -= margin;
 
-    // Apply blur to simulate the modal's backdrop-filter (8px)
     ctx.filter = 'blur(8px)';
     ctx.drawImage(bgImg, drawX, drawY, drawW, drawH);
     ctx.filter = 'none';
@@ -89,16 +87,12 @@ function createCompositeExportCanvas(sourceCanvas) {
     ctx.fillRect(0, 0, exportW, exportH);
   }
 
-  // Simulate modal CSS compositing layers:
-  // 1. dialog::backdrop background (darkens the screen)
   ctx.fillStyle = 'rgba(11, 13, 16, 0.4)';
   ctx.fillRect(0, 0, exportW, exportH);
 
-  // 2. dialog.glass-card background
   ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
   ctx.fillRect(0, 0, exportW, exportH);
 
-  // Draw the QR Code dots canvas
   ctx.drawImage(sourceCanvas, 0, 0, exportW, exportH);
 
   return exportCanvas;
@@ -120,10 +114,8 @@ export async function renderQrCode(canvas, text, options = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Clear canvas background (網頁畫面保持全透明無白底)
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-  // Highest saturation color sampled from background image
   const dotColor =
     options.color?.dark ||
     window.__highestSaturationColor ||
@@ -137,7 +129,6 @@ export async function renderQrCode(canvas, text, options = {}) {
 
   ctx.fillStyle = dotColor;
 
-  // Render dots for each dark module (點點呈現)
   for (let row = 0; row < size; row++) {
     for (let col = 0; col < size; col++) {
       if (modules.get(row, col)) {
