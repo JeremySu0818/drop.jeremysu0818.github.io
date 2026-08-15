@@ -81,6 +81,14 @@ html {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
+html.i18n-loading body {
+  visibility: hidden;
+}
+
+html.i18n-loading {
+  background: var(--bg-ink);
+}
+
 html:has(dialog[open]),
 body:has(dialog[open]) {
   overflow: hidden !important;

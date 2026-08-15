@@ -43,127 +43,144 @@ function pickRandomBackground() {
   return BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)];
 }
 
-function setRandomBackground() {
+let initialBackgroundPromise;
+
+export function prepareInitialBackground() {
+  if (initialBackgroundPromise) return initialBackgroundPromise;
+
   const background = pickRandomBackground();
-  document.documentElement.style.setProperty(
-    '--page-background',
-    `url("${background}")`,
-  );
-  document.documentElement.style.setProperty(
-    '--page-background-position',
-    'center',
-  );
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = background;
-  img.onload = () => {
-    window.__currentBgImg = img;
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 100;
-      canvas.height = 50;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0, 100, 50);
-      const imgData = ctx.getImageData(0, 0, 100, 50).data;
-      const colVibrancies = [];
-      for (let x = 0; x < 100; x++) {
-        let sumR = 0;
-        let sumG = 0;
-        let sumB = 0;
-        for (let y = 0; y < 50; y++) {
-          const idx = (y * 100 + x) * 4;
-          sumR += imgData[idx];
-          sumG += imgData[idx + 1];
-          sumB += imgData[idx + 2];
+  initialBackgroundPromise = new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      window.__currentBgImg = img;
+      let backgroundPosition = 'center';
+      let highestSaturationColor;
+
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 50;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas 2D context is unavailable');
+        ctx.drawImage(img, 0, 0, 100, 50);
+        const imgData = ctx.getImageData(0, 0, 100, 50).data;
+        const colVibrancies = [];
+        for (let x = 0; x < 100; x++) {
+          let sumR = 0;
+          let sumG = 0;
+          let sumB = 0;
+          for (let y = 0; y < 50; y++) {
+            const idx = (y * 100 + x) * 4;
+            sumR += imgData[idx];
+            sumG += imgData[idx + 1];
+            sumB += imgData[idx + 2];
+          }
+          const meanR = sumR / 50;
+          const meanG = sumG / 50;
+          const meanB = sumB / 50;
+          let varR = 0;
+          let varG = 0;
+          let varB = 0;
+          for (let y = 0; y < 50; y++) {
+            const idx = (y * 100 + x) * 4;
+            varR += Math.pow(imgData[idx] - meanR, 2);
+            varG += Math.pow(imgData[idx + 1] - meanG, 2);
+            varB += Math.pow(imgData[idx + 2] - meanB, 2);
+          }
+          const stdR = Math.sqrt(varR / 50);
+          const stdG = Math.sqrt(varG / 50);
+          const stdB = Math.sqrt(varB / 50);
+          colVibrancies.push((stdR + stdG + stdB) / 3.0);
         }
-        const meanR = sumR / 50;
-        const meanG = sumG / 50;
-        const meanB = sumB / 50;
-        let varR = 0;
-        let varG = 0;
-        let varB = 0;
-        for (let y = 0; y < 50; y++) {
-          const idx = (y * 100 + x) * 4;
-          varR += Math.pow(imgData[idx] - meanR, 2);
-          varG += Math.pow(imgData[idx + 1] - meanG, 2);
-          varB += Math.pow(imgData[idx + 2] - meanB, 2);
+        const vibrancies = [];
+        const halfWin = 13;
+        for (let x = 0; x < 100; x++) {
+          const start = Math.max(0, x - halfWin);
+          const end = Math.min(100, x + halfWin);
+          let sum = 0;
+          for (let wx = start; wx < end; wx++) {
+            sum += colVibrancies[wx];
+          }
+          vibrancies.push(sum / (end - start));
         }
-        const stdR = Math.sqrt(varR / 50);
-        const stdG = Math.sqrt(varG / 50);
-        const stdB = Math.sqrt(varB / 50);
-        colVibrancies.push((stdR + stdG + stdB) / 3.0);
-      }
-      const vibrancies = [];
-      const halfWin = 13;
-      for (let x = 0; x < 100; x++) {
-        const start = Math.max(0, x - halfWin);
-        const end = Math.min(100, x + halfWin);
-        let sum = 0;
-        for (let wx = start; wx < end; wx++) {
-          sum += colVibrancies[wx];
+        let maxVib = 0;
+        for (let i = 0; i < 100; i++) {
+          if (vibrancies[i] > maxVib) {
+            maxVib = vibrancies[i];
+          }
         }
-        vibrancies.push(sum / (end - start));
-      }
-      let maxVib = 0;
-      for (let i = 0; i < 100; i++) {
-        if (vibrancies[i] > maxVib) {
-          maxVib = vibrancies[i];
+        const threshold = maxVib * 0.75;
+        const goodPositions = [];
+        for (let i = 0; i < 100; i++) {
+          if (vibrancies[i] >= threshold) {
+            goodPositions.push(i);
+          }
         }
-      }
-      const threshold = maxVib * 0.75;
-      const goodPositions = [];
-      for (let i = 0; i < 100; i++) {
-        if (vibrancies[i] >= threshold) {
-          goodPositions.push(i);
+        if (goodPositions.length > 0) {
+          const chosenX =
+            goodPositions[Math.floor(Math.random() * goodPositions.length)];
+          backgroundPosition = `${chosenX}% center`;
         }
-      }
-      if (goodPositions.length > 0) {
-        const chosenX =
-          goodPositions[Math.floor(Math.random() * goodPositions.length)];
+
+        let maxSat = -1;
+        let bestR = 37;
+        let bestG = 99;
+        let bestB = 235;
+
+        for (let i = 0; i < imgData.length; i += 4) {
+          const r = imgData[i];
+          const g = imgData[i + 1];
+          const b = imgData[i + 2];
+          const a = imgData[i + 3];
+          if (a < 128) continue;
+
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          if (max < 30 || min > 245) continue;
+
+          const sat = (max - min) / max;
+          if (sat > maxSat) {
+            maxSat = sat;
+            bestR = r;
+            bestG = g;
+            bestB = b;
+          }
+        }
+
+        const toHex = (n) => n.toString(16).padStart(2, '0');
+        highestSaturationColor = `#${toHex(bestR)}${toHex(bestG)}${toHex(bestB)}`;
+      } catch (e) {}
+
+      // Apply the fully loaded image, its final position, and its sampled color
+      // together so the visitor never sees intermediate background states.
+      document.documentElement.style.setProperty(
+        '--page-background',
+        `url("${background}")`,
+      );
+      document.documentElement.style.setProperty(
+        '--page-background-position',
+        backgroundPosition,
+      );
+      if (highestSaturationColor) {
         document.documentElement.style.setProperty(
-          '--page-background-position',
-          `${chosenX}% center`,
+          '--highest-sat-color',
+          highestSaturationColor,
+        );
+        window.__highestSaturationColor = highestSaturationColor;
+        window.dispatchEvent(
+          new CustomEvent('theme:color-sampled', {
+            detail: { color: highestSaturationColor },
+          }),
         );
       }
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = background;
+  });
 
-      let maxSat = -1;
-      let bestR = 37;
-      let bestG = 99;
-      let bestB = 235;
-
-      for (let i = 0; i < imgData.length; i += 4) {
-        const r = imgData[i];
-        const g = imgData[i + 1];
-        const b = imgData[i + 2];
-        const a = imgData[i + 3];
-        if (a < 128) continue;
-
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        if (max < 30 || min > 245) continue;
-
-        const sat = (max - min) / max;
-        if (sat > maxSat) {
-          maxSat = sat;
-          bestR = r;
-          bestG = g;
-          bestB = b;
-        }
-      }
-
-      const toHex = (n) => n.toString(16).padStart(2, '0');
-      const hexColor = `#${toHex(bestR)}${toHex(bestG)}${toHex(bestB)}`;
-      document.documentElement.style.setProperty(
-        '--highest-sat-color',
-        hexColor,
-      );
-      window.__highestSaturationColor = hexColor;
-      window.dispatchEvent(
-        new CustomEvent('theme:color-sampled', { detail: { color: hexColor } }),
-      );
-    } catch (e) {}
-  };
+  return initialBackgroundPromise;
 }
 
 function mountGlassFilter(createLiquidGlass, element, registry) {
@@ -216,7 +233,7 @@ export function initPageEffects(createLiquidGlass) {
     return () => {};
   }
 
-  setRandomBackground();
+  void prepareInitialBackground();
 
   if (typeof createLiquidGlass !== 'function') {
     return () => {};
