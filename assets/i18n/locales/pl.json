@@ -123,6 +123,7 @@
       "downloadCancelled": "Pobieranie anulowano. Kopia serwerowa nie została usunięta; użyj tego samego linku, aby spróbować ponownie.",
       "downloadServerRequired": "Wymagany jest adres URL serwera pobierania.",
       "networkDownloadError": "Błąd sieci podczas pobierania.",
+      "downloadInterruptedRetrying": "Połączenie zostało przerwane. Ponowna próba za 3 sekundy… (próba {attempt})",
       "largeDownloadUnsupported": "Ta przeglądarka nie może strumieniować dużych pobrań do lokalnej pamięci. Użyj aktualnej wersji Chromium, Safari lub Firefox.",
       "zipEntryClosed": "Wpis ZIP jest już zamknięty.",
       "folderNotWritable": "Nie można zapisać w wybranym folderze.",

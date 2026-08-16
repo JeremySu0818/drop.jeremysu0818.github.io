@@ -123,6 +123,7 @@
       "downloadCancelled": "Đã hủy tải xuống. Bản sao trên máy chủ không bị xóa; hãy dùng cùng liên kết để thử lại.",
       "downloadServerRequired": "Cần có URL máy chủ tải xuống.",
       "networkDownloadError": "Lỗi mạng khi tải xuống.",
+      "downloadInterruptedRetrying": "Kết nối bị gián đoạn. Thử lại sau 3 giây… (lần thử {attempt})",
       "largeDownloadUnsupported": "Trình duyệt này không thể truyền các tệp tải lớn vào bộ nhớ cục bộ. Hãy dùng phiên bản Chromium, Safari hoặc Firefox mới.",
       "zipEntryClosed": "Mục ZIP đã đóng.",
       "folderNotWritable": "Không thể ghi vào thư mục đã chọn.",

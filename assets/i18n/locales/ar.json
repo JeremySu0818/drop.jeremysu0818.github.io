@@ -123,6 +123,7 @@
       "downloadCancelled": "أُلغي التنزيل. لم تُحذف نسخة الخادم؛ استخدم الرابط نفسه لإعادة المحاولة.",
       "downloadServerRequired": "يلزم عنوان URL لخادم التنزيل.",
       "networkDownloadError": "خطأ في الشبكة أثناء التنزيل.",
+      "downloadInterruptedRetrying": "انقطع الاتصال. ستتم إعادة المحاولة خلال 3 ثوانٍ… (المحاولة {attempt})",
       "largeDownloadUnsupported": "لا يستطيع هذا المتصفح بث التنزيلات الكبيرة إلى التخزين المحلي. استخدم إصدارًا حديثًا من Chromium أو Safari أو Firefox.",
       "zipEntryClosed": "إدخال ZIP مغلق بالفعل.",
       "folderNotWritable": "لا يمكن الكتابة في المجلد المختار.",

@@ -7,6 +7,16 @@ export function createToastManager(toastElement) {
   let toastTimer = 0;
   let hideTimer = 0;
 
+  const messageElement = document.createElement('span');
+  messageElement.className = 'toast-message';
+  const progressTrack = document.createElement('span');
+  progressTrack.className = 'toast-progress-track';
+  progressTrack.setAttribute('aria-hidden', 'true');
+  const progressBar = document.createElement('span');
+  progressBar.className = 'toast-progress-bar';
+  progressTrack.append(progressBar);
+  toastElement.replaceChildren(messageElement, progressTrack);
+
   const hide = () => {
     window.clearTimeout(toastTimer);
     window.clearTimeout(hideTimer);
@@ -26,30 +36,40 @@ export function createToastManager(toastElement) {
 
   return {
     show(message, options = {}) {
-      const { persist = false } = options;
+      const { persist = false, progress } = options;
       window.clearTimeout(toastTimer);
       window.clearTimeout(hideTimer);
 
-      if (
-        typeof toastElement.hidePopover === 'function' &&
-        toastElement.matches?.(':popover-open')
-      ) {
-        try {
-          toastElement.hidePopover();
-        } catch (e) {}
+      const wasVisible = toastElement.classList.contains('is-visible');
+      const showsProgress = Object.hasOwn(options, 'progress');
+      if (messageElement.textContent !== String(message)) {
+        messageElement.textContent = message;
+      }
+      toastElement.classList.toggle('has-progress', showsProgress);
+      toastElement.classList.toggle(
+        'is-indeterminate',
+        showsProgress && progress === null,
+      );
+      if (showsProgress && progress !== null) {
+        const normalizedProgress = Math.max(
+          0,
+          Math.min(100, Number(progress) || 0),
+        );
+        progressBar.style.transform = `scaleX(${normalizedProgress / 100})`;
       }
 
-      toastElement.textContent = message;
-
-      if (typeof toastElement.showPopover === 'function') {
+      if (
+        typeof toastElement.showPopover === 'function' &&
+        !toastElement.matches?.(':popover-open')
+      ) {
         try {
           toastElement.showPopover();
         } catch (e) {}
       }
 
-      toastElement.classList.remove('is-visible');
-      void toastElement.offsetWidth;
-      toastElement.classList.add('is-visible');
+      if (!wasVisible) {
+        toastElement.classList.add('is-visible');
+      }
 
       if (!persist) {
         toastTimer = window.setTimeout(() => {

@@ -318,6 +318,7 @@
       "downloadCancelled": "下载已取消。服务器副本未删除，请使用同一链接重试。",
       "downloadServerRequired": "需要下载服务器 URL。",
       "networkDownloadError": "下载时发生网络错误。",
+      "downloadInterruptedRetrying": "连接中断，3 秒后重试…（第 {attempt} 次尝试）",
       "largeDownloadUnsupported": "此浏览器无法将大型下载流式写入本地存储。请使用新版 Chromium、Safari 或 Firefox。",
       "zipEntryClosed": "ZIP 条目已关闭。",
       "folderNotWritable": "所选文件夹不可写入。",

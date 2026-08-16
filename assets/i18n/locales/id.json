@@ -118,6 +118,7 @@
       "downloadCancelled": "Unduhan dibatalkan. Salinan server tidak dihapus; gunakan tautan yang sama untuk mencoba lagi.",
       "downloadServerRequired": "URL server unduhan diperlukan.",
       "networkDownloadError": "Kesalahan jaringan saat mengunduh.",
+      "downloadInterruptedRetrying": "Koneksi terputus. Mencoba lagi dalam 3 detik… (percobaan {attempt})",
       "largeDownloadUnsupported": "Browser ini tidak dapat mengalirkan unduhan besar ke penyimpanan lokal. Gunakan Chromium, Safari, atau Firefox versi terbaru.",
       "zipEntryClosed": "Entri ZIP sudah ditutup.",
       "folderNotWritable": "Folder yang dipilih tidak dapat ditulis.",

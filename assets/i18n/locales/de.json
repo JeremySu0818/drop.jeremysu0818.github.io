@@ -139,6 +139,7 @@
       "downloadCancelled": "Download abgebrochen. Die Serverkopie wurde nicht gelöscht; verwenden Sie denselben Link für einen neuen Versuch.",
       "downloadServerRequired": "Eine URL für den Download-Server ist erforderlich.",
       "networkDownloadError": "Netzwerkfehler beim Herunterladen.",
+      "downloadInterruptedRetrying": "Verbindung unterbrochen. Neuer Versuch in 3 Sekunden … (Versuch {attempt})",
       "largeDownloadUnsupported": "Dieser Browser kann große Downloads nicht in den lokalen Speicher streamen. Verwenden Sie eine aktuelle Version von Chromium, Safari oder Firefox.",
       "zipEntryClosed": "Der ZIP-Eintrag ist bereits geschlossen.",
       "folderNotWritable": "In den ausgewählten Ordner kann nicht geschrieben werden.",

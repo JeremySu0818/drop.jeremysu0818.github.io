@@ -118,6 +118,7 @@
       "downloadCancelled": "Stahování zrušeno. Kopie na serveru nebyla odstraněna; pro opakování použijte stejný odkaz.",
       "downloadServerRequired": "Je vyžadována adresa URL serveru pro stahování.",
       "networkDownloadError": "Chyba sítě při stahování.",
+      "downloadInterruptedRetrying": "Připojení bylo přerušeno. Další pokus za 3 sekundy… (pokus {attempt})",
       "largeDownloadUnsupported": "Tento prohlížeč nemůže streamovat velká stahování do místního úložiště. Použijte aktuální verzi Chromia, Safari nebo Firefoxu.",
       "zipEntryClosed": "Položka ZIP je již uzavřena.",
       "folderNotWritable": "Do vybrané složky nelze zapisovat.",

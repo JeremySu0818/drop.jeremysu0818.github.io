@@ -123,6 +123,7 @@
       "downloadCancelled": "다운로드를 취소했습니다. 서버 사본은 삭제되지 않았으므로 같은 링크로 다시 시도하세요.",
       "downloadServerRequired": "다운로드 서버 URL이 필요합니다.",
       "networkDownloadError": "다운로드 중 네트워크 오류가 발생했습니다.",
+      "downloadInterruptedRetrying": "연결이 끊겼습니다. 3초 후 다시 시도합니다… ({attempt}회)",
       "largeDownloadUnsupported": "이 브라우저는 대용량 다운로드를 로컬 저장소로 스트리밍할 수 없습니다. 최신 Chromium, Safari 또는 Firefox를 사용하세요.",
       "zipEntryClosed": "ZIP 항목이 이미 닫혔습니다.",
       "folderNotWritable": "선택한 폴더에 쓸 수 없습니다.",

@@ -118,6 +118,7 @@
       "downloadCancelled": "डाउनलोड रद्द कर दिया गया। सर्वर कॉपी नहीं हटाई गई; फिर प्रयास के लिए उसी लिंक का उपयोग करें।",
       "downloadServerRequired": "डाउनलोड सर्वर URL आवश्यक है।",
       "networkDownloadError": "डाउनलोड करते समय नेटवर्क त्रुटि हुई।",
+      "downloadInterruptedRetrying": "कनेक्शन टूट गया। 3 सेकंड में फिर प्रयास होगा… (प्रयास {attempt})",
       "largeDownloadUnsupported": "यह ब्राउज़र बड़े डाउनलोड को स्थानीय स्टोरेज में स्ट्रीम नहीं कर सकता। Chromium, Safari या Firefox का नया संस्करण इस्तेमाल करें।",
       "zipEntryClosed": "ZIP प्रविष्टि पहले से बंद है।",
       "folderNotWritable": "चुने गए फ़ोल्डर में लिखा नहीं जा सकता।",

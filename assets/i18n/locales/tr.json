@@ -118,6 +118,7 @@
       "downloadCancelled": "İndirme iptal edildi. Sunucu kopyası silinmedi; yeniden denemek için aynı bağlantıyı kullanın.",
       "downloadServerRequired": "İndirme sunucusu URL'si gereklidir.",
       "networkDownloadError": "İndirme sırasında ağ hatası.",
+      "downloadInterruptedRetrying": "Bağlantı kesildi. 3 saniye sonra yeniden denenecek… (deneme {attempt})",
       "largeDownloadUnsupported": "Bu tarayıcı büyük indirmeleri yerel depoya aktaramaz. Güncel Chromium, Safari veya Firefox kullanın.",
       "zipEntryClosed": "ZIP girdisi zaten kapalı.",
       "folderNotWritable": "Seçilen klasöre yazılamıyor.",

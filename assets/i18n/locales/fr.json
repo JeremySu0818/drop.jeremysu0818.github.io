@@ -139,6 +139,7 @@
       "downloadCancelled": "Téléchargement annulé. La copie serveur n'a pas été supprimée ; utilisez le même lien pour réessayer.",
       "downloadServerRequired": "Une URL de serveur de téléchargement est requise.",
       "networkDownloadError": "Erreur réseau pendant le téléchargement.",
+      "downloadInterruptedRetrying": "Connexion interrompue. Nouvelle tentative dans 3 secondes… (tentative {attempt})",
       "largeDownloadUnsupported": "Ce navigateur ne peut pas enregistrer les gros téléchargements en flux local. Utilisez une version récente de Chromium, Safari ou Firefox.",
       "zipEntryClosed": "L'entrée ZIP est déjà fermée.",
       "folderNotWritable": "Le dossier sélectionné n'est pas accessible en écriture.",

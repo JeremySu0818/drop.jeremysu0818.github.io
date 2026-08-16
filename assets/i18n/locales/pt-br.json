@@ -139,6 +139,7 @@
       "downloadCancelled": "Download cancelado. A cópia do servidor não foi excluída; use o mesmo link para tentar novamente.",
       "downloadServerRequired": "É necessário fornecer um URL de servidor de download.",
       "networkDownloadError": "Erro de rede durante o download.",
+      "downloadInterruptedRetrying": "Conexão interrompida. Nova tentativa em 3 segundos… (tentativa {attempt})",
       "largeDownloadUnsupported": "Este navegador não consegue transmitir downloads grandes para o armazenamento local. Use uma versão atual do Chromium, Safari ou Firefox.",
       "zipEntryClosed": "A entrada ZIP já está fechada.",
       "folderNotWritable": "Não é possível gravar na pasta selecionada.",

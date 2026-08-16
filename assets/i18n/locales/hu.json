@@ -118,6 +118,7 @@
       "downloadCancelled": "A letöltés megszakítva. A szerverpéldány nem törlődött; újrapróbáláshoz használja ugyanazt a hivatkozást.",
       "downloadServerRequired": "Letöltési szerver URL-je szükséges.",
       "networkDownloadError": "Hálózati hiba letöltés közben.",
+      "downloadInterruptedRetrying": "A kapcsolat megszakadt. Újrapróbálkozás 3 másodperc múlva… ({attempt}. próbálkozás)",
       "largeDownloadUnsupported": "Ez a böngésző nem tud nagy letöltéseket helyi tárolóba streamelni. Használja a Chromium, Safari vagy Firefox friss verzióját.",
       "zipEntryClosed": "A ZIP-bejegyzés már le van zárva.",
       "folderNotWritable": "A kijelölt mappába nem lehet írni.",

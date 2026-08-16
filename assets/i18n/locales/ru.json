@@ -123,6 +123,7 @@
       "downloadCancelled": "Загрузка отменена. Копия на сервере не удалена; используйте ту же ссылку, чтобы попробовать снова.",
       "downloadServerRequired": "Требуется URL сервера загрузки.",
       "networkDownloadError": "Ошибка сети при скачивании.",
+      "downloadInterruptedRetrying": "Соединение прервано. Повторная попытка через 3 секунды… (попытка {attempt})",
       "largeDownloadUnsupported": "Этот браузер не может передавать большие загрузки в локальное хранилище. Используйте актуальную версию Chromium, Safari или Firefox.",
       "zipEntryClosed": "Запись ZIP уже закрыта.",
       "folderNotWritable": "В выбранную папку нельзя записывать.",

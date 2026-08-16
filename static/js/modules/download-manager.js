@@ -10,6 +10,13 @@ import { t } from '../i18n.js';
 
 const MEMORY_DOWNLOAD_LIMIT = 512 * 1024 * 1024;
 const STALE_DOWNLOAD_FILE_AGE_MS = 24 * 60 * 60 * 1000;
+const PROGRESS_RENDER_INTERVAL_MS = 100;
+const AES_GCM_TAG_SIZE_BYTES = 16;
+const DOWNLOAD_CHUNK_SIZE_BYTES = 64 * 1024 * 1024;
+const DOWNLOAD_RETRY_DELAY_MS = 3000;
+const CACHE_CHECKPOINT_BYTES = 4 * 1024 * 1024;
+const CACHE_CHECKPOINT_INTERVAL_MS = 1000;
+const PARTIAL_DOWNLOAD_STATE = Symbol('partialDownloadState');
 
 export class DownloadCancelledError extends Error {
   constructor() {
@@ -86,6 +93,299 @@ export function createDownloadManager({
     });
   }
 
+  async function readResponseBytes(
+    response,
+    onProgress,
+    existingState,
+    onCheckpoint,
+  ) {
+    const declaredLength = Number(response.headers.get('Content-Length'));
+    const hasDeclaredLength =
+      Number.isFinite(declaredLength) && declaredLength > 0;
+    const initialReceived = existingState?.receivedBytes || 0;
+    const expectedBytes =
+      existingState?.expectedBytes ??
+      (hasDeclaredLength ? initialReceived + declaredLength : null);
+    let bytes =
+      existingState?.bytes || new Uint8Array(expectedBytes || 64 * 1024);
+    let received = initialReceived;
+
+    const append = async (value) => {
+      if (received + value.byteLength > bytes.byteLength) {
+        const expanded = new Uint8Array(
+          Math.max(received + value.byteLength, bytes.byteLength * 2),
+        );
+        expanded.set(bytes.subarray(0, received));
+        bytes = expanded;
+      }
+      bytes.set(value, received);
+      received += value.byteLength;
+      onProgress?.(received, expectedBytes);
+      await onCheckpoint?.(bytes, received, false);
+    };
+    const savePartialState = (error) => {
+      const downloadError =
+        error instanceof Error
+          ? error
+          : new Error(t('runtime.networkDownloadError'));
+      downloadError[PARTIAL_DOWNLOAD_STATE] = {
+        bytes,
+        receivedBytes: received,
+        expectedBytes,
+      };
+      return downloadError;
+    };
+    const finish = async () => {
+      if (expectedBytes !== null && received !== expectedBytes) {
+        const error = new Error(t('runtime.networkDownloadError'));
+        error.name = 'NetworkError';
+        throw savePartialState(error);
+      }
+      await onCheckpoint?.(bytes, received, true);
+      return received === bytes.byteLength ? bytes : bytes.slice(0, received);
+    };
+
+    if (!response.body?.getReader) {
+      await append(new Uint8Array(await response.arrayBuffer()));
+      return finish();
+    }
+
+    const reader = response.body.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await append(value);
+      }
+    } catch (error) {
+      await onCheckpoint?.(bytes, received, true);
+      if (expectedBytes !== null && received === expectedBytes) {
+        return received === bytes.byteLength ? bytes : bytes.slice(0, received);
+      }
+      throw savePartialState(error);
+    } finally {
+      reader.releaseLock();
+    }
+
+    return finish();
+  }
+
+  function validatePartialContentRange(response, partialState) {
+    const match = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(
+      response.headers.get('Content-Range') || '',
+    );
+    if (!match) return false;
+    const start = Number(match[1]);
+    const end = Number(match[2]);
+    const total = Number(match[3]);
+    return (
+      start === partialState.receivedBytes &&
+      end >= start &&
+      total === partialState.expectedBytes
+    );
+  }
+
+  function waitForDownloadRetry(delayMs) {
+    return new Promise((resolve) => window.setTimeout(resolve, delayMs));
+  }
+
+  function isRetryableDownloadError(error) {
+    if (error?.retryable === true) return true;
+    return (
+      error instanceof TypeError ||
+      ['AbortError', 'NetworkError', 'TimeoutError'].includes(error?.name)
+    );
+  }
+
+  async function fetchChunkWithRetry(
+    url,
+    headers,
+    onProgress,
+    onRetry,
+    { initialState, onCheckpoint, onIv, onReset } = {},
+  ) {
+    let partialState = initialState;
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        const requestHeaders = {
+          ...headers,
+          ...(partialState?.receivedBytes > 0
+            ? { Range: `bytes=${partialState.receivedBytes}-` }
+            : {}),
+        };
+        const response = await fetch(url, { headers: requestHeaders });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          const error = new Error(
+            body.error || t('runtime.encryptedChunkDownloadFailed'),
+          );
+          error.status = response.status;
+          error.retryable =
+            response.status === 408 ||
+            response.status === 429 ||
+            response.status >= 500;
+          throw error;
+        }
+
+        if (partialState?.receivedBytes > 0) {
+          if (response.status === 206) {
+            if (!validatePartialContentRange(response, partialState)) {
+              throw new Error(t('runtime.encryptedChunkDownloadFailed'));
+            }
+          } else {
+            partialState = undefined;
+            await onReset?.();
+          }
+        } else if (response.status === 206) {
+          throw new Error(t('runtime.encryptedChunkDownloadFailed'));
+        }
+
+        const iv = response.headers.get('X-Chunk-IV');
+        if (!iv) throw new Error(t('runtime.encryptedChunkIvMissing'));
+        await onIv?.(iv);
+        return {
+          iv,
+          ciphertext: await readResponseBytes(
+            response,
+            onProgress,
+            partialState,
+            onCheckpoint,
+          ),
+        };
+      } catch (error) {
+        if (!isRetryableDownloadError(error)) throw error;
+        partialState = error?.[PARTIAL_DOWNLOAD_STATE] || partialState;
+        const nextAttempt = attempt + 1;
+        onRetry?.(
+          nextAttempt,
+          partialState?.receivedBytes || 0,
+          partialState?.expectedBytes || null,
+        );
+        await waitForDownloadRetry(DOWNLOAD_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  function safeCacheId(value) {
+    return String(value).replace(/[^A-Za-z0-9_-]/g, '_');
+  }
+
+  async function createDownloadChunkCache(downloadId) {
+    if (!navigator.storage?.getDirectory) return null;
+
+    try {
+      navigator.storage.persist?.().catch(() => {});
+      const root = await navigator.storage.getDirectory();
+      const prefix = `drop-resume-${safeCacheId(downloadId)}-`;
+      const namesFor = (fileId, chunkIndex) => {
+        const base = `${prefix}${safeCacheId(fileId)}-${chunkIndex}`;
+        return { data: `${base}.bin`, iv: `${base}.iv` };
+      };
+
+      return {
+        async read(fileId, chunkIndex, expectedBytes) {
+          const names = namesFor(fileId, chunkIndex);
+          try {
+            const dataHandle = await root.getFileHandle(names.data);
+            const dataFile = await dataHandle.getFile();
+            if (dataFile.size <= 0 || dataFile.size > expectedBytes) {
+              await root.removeEntry(names.data).catch(() => {});
+              await root.removeEntry(names.iv).catch(() => {});
+              return null;
+            }
+            const ivHandle = await root.getFileHandle(names.iv);
+            const iv = await (await ivHandle.getFile()).text();
+            if (!iv) return null;
+            return {
+              bytes: new Uint8Array(await dataFile.arrayBuffer()),
+              iv,
+            };
+          } catch (error) {
+            if (error?.name === 'NotFoundError') return null;
+            throw error;
+          }
+        },
+        createCheckpoint(fileId, chunkIndex, initialPersistedBytes = 0) {
+          const names = namesFor(fileId, chunkIndex);
+          let persistedBytes = initialPersistedBytes;
+          let lastCheckpointAt = performance.now();
+          let disabled = false;
+
+          return {
+            async checkpoint(bytes, receivedBytes, force) {
+              if (disabled || receivedBytes <= persistedBytes) return;
+              const now = performance.now();
+              if (
+                !force &&
+                receivedBytes - persistedBytes < CACHE_CHECKPOINT_BYTES &&
+                now - lastCheckpointAt < CACHE_CHECKPOINT_INTERVAL_MS
+              ) {
+                return;
+              }
+
+              let writable;
+              try {
+                const handle = await root.getFileHandle(names.data, {
+                  create: true,
+                });
+                writable = await handle.createWritable({
+                  keepExistingData: true,
+                });
+                await writable.seek(persistedBytes);
+                await writable.write(
+                  bytes.subarray(persistedBytes, receivedBytes),
+                );
+                await writable.truncate(receivedBytes);
+                await writable.close();
+                writable = null;
+                persistedBytes = receivedBytes;
+                lastCheckpointAt = now;
+              } catch {
+                disabled = true;
+                await writable?.abort().catch(() => {});
+              }
+            },
+            async reset() {
+              persistedBytes = 0;
+              lastCheckpointAt = performance.now();
+              await root.removeEntry(names.data).catch(() => {});
+            },
+            async writeIv(iv) {
+              if (disabled) return;
+              let writable;
+              try {
+                const handle = await root.getFileHandle(names.iv, {
+                  create: true,
+                });
+                writable = await handle.createWritable();
+                await writable.write(iv);
+                await writable.close();
+                writable = null;
+              } catch {
+                disabled = true;
+                await writable?.abort().catch(() => {});
+              }
+            },
+          };
+        },
+        async remove(fileId, chunkIndex) {
+          const names = namesFor(fileId, chunkIndex);
+          await root.removeEntry(names.data).catch(() => {});
+          await root.removeEntry(names.iv).catch(() => {});
+        },
+        async removeAll() {
+          for await (const [name] of root.entries()) {
+            if (name.startsWith(prefix)) {
+              await root.removeEntry(name).catch(() => {});
+            }
+          }
+        },
+      };
+    } catch {
+      return null;
+    }
+  }
+
   function supportsDirectoryDownloads() {
     return (
       window.isSecureContext && typeof window.showDirectoryPicker === 'function'
@@ -141,10 +441,16 @@ export function createDownloadManager({
       const root = await navigator.storage.getDirectory();
       for await (const [name] of root.entries()) {
         const match = /^drop-(\d+)-/.exec(name);
-        if (
-          match &&
-          Date.now() - Number(match[1]) >= STALE_DOWNLOAD_FILE_AGE_MS
-        ) {
+        let isStale =
+          match && Date.now() - Number(match[1]) >= STALE_DOWNLOAD_FILE_AGE_MS;
+        if (!isStale && name.startsWith('drop-resume-')) {
+          try {
+            const file = await (await root.getFileHandle(name)).getFile();
+            isStale =
+              Date.now() - file.lastModified >= STALE_DOWNLOAD_FILE_AGE_MS;
+          } catch {}
+        }
+        if (isStale) {
           await root.removeEntry(name).catch(() => {});
         }
       }
@@ -310,8 +616,38 @@ export function createDownloadManager({
       method: 'POST',
       body: JSON.stringify({ lookupKey }),
     });
+    const chunkCache = await createDownloadChunkCache(payload.downloadId);
     const totalBytes = payload.files.reduce((sum, file) => sum + file.size, 0);
     let downloadedBytes = 0;
+    let lastProgressRenderAt = 0;
+
+    const renderProgress = (
+      bytes,
+      fileIndex,
+      writesZip,
+      force = false,
+      allowComplete = false,
+    ) => {
+      const now = performance.now();
+      if (!force && now - lastProgressRenderAt < PROGRESS_RENDER_INTERVAL_MS) {
+        return;
+      }
+      lastProgressRenderAt = now;
+      let progress =
+        totalBytes === 0 ? 100 : Math.min(100, (bytes / totalBytes) * 100);
+      if (!allowComplete && progress >= 100) progress = 99.9;
+      const percent = Math.floor(progress);
+      showToast(
+        writesZip
+          ? t('runtime.downloadingZipProgress', { percent })
+          : t('runtime.downloadingFileProgress', {
+              current: fileIndex + 1,
+              total: payload.files.length,
+              percent,
+            }),
+        { persist: true, progress },
+      );
+    };
 
     try {
       const files = [];
@@ -354,6 +690,8 @@ export function createDownloadManager({
         writesZip = true;
       }
 
+      renderProgress(downloadedBytes, 0, writesZip, true);
+
       try {
         for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {
           const { encryptedFile, meta } = files[fileIndex];
@@ -369,54 +707,124 @@ export function createDownloadManager({
             chunkIndex < encryptedFile.chunkCount;
             chunkIndex += 1
           ) {
-            const response = await fetch(
-              serverUrl +
-                '/api/chunked-download/' +
-                payload.downloadId +
-                '/files/' +
-                encryptedFile.id +
-                '/chunks/' +
-                chunkIndex,
-              {
-                headers: {
-                  Authorization: 'Bearer ' + payload.downloadToken,
-                },
-              },
+            const bytesBeforeChunk = downloadedBytes;
+            const plaintextChunkLength = Math.max(
+              0,
+              Math.min(
+                DOWNLOAD_CHUNK_SIZE_BYTES,
+                encryptedFile.size - chunkIndex * DOWNLOAD_CHUNK_SIZE_BYTES,
+              ),
             );
-            if (!response.ok) {
-              const body = await response.json().catch(() => ({}));
-              throw new Error(
-                body.error || t('runtime.encryptedChunkDownloadFailed'),
+            const expectedCiphertextBytes =
+              plaintextChunkLength + AES_GCM_TAG_SIZE_BYTES;
+            const cachedChunk = await chunkCache?.read(
+              encryptedFile.id,
+              chunkIndex,
+              expectedCiphertextBytes,
+            );
+            const cachedBytes = cachedChunk?.bytes;
+            const checkpoint = chunkCache?.createCheckpoint(
+              encryptedFile.id,
+              chunkIndex,
+              cachedBytes?.byteLength || 0,
+            );
+            const estimateDownloadedBytes = (
+              receivedBytes,
+              encryptedLength,
+            ) => {
+              const estimatedPlaintextLength = encryptedLength
+                ? Math.max(0, encryptedLength - AES_GCM_TAG_SIZE_BYTES)
+                : Math.max(0, receivedBytes - AES_GCM_TAG_SIZE_BYTES);
+              const receivedRatio = encryptedLength
+                ? Math.min(1, receivedBytes / encryptedLength)
+                : 1;
+              return Math.min(
+                totalBytes,
+                bytesBeforeChunk + estimatedPlaintextLength * receivedRatio,
               );
+            };
+            const reportChunkProgress = (receivedBytes, encryptedLength) => {
+              renderProgress(
+                estimateDownloadedBytes(receivedBytes, encryptedLength),
+                fileIndex,
+                writesZip,
+              );
+            };
+
+            let iv;
+            let ciphertext;
+            if (cachedBytes?.byteLength === expectedCiphertextBytes) {
+              iv = cachedChunk.iv;
+              ciphertext = cachedBytes;
+              reportChunkProgress(
+                expectedCiphertextBytes,
+                expectedCiphertextBytes,
+              );
+            } else {
+              if (cachedBytes?.byteLength) {
+                reportChunkProgress(
+                  cachedBytes.byteLength,
+                  expectedCiphertextBytes,
+                );
+              }
+              ({ iv, ciphertext } = await fetchChunkWithRetry(
+                serverUrl +
+                  '/api/chunked-download/' +
+                  payload.downloadId +
+                  '/files/' +
+                  encryptedFile.id +
+                  '/chunks/' +
+                  chunkIndex,
+                { Authorization: 'Bearer ' + payload.downloadToken },
+                reportChunkProgress,
+                (attempt, receivedBytes, encryptedLength) => {
+                  const progress = totalBytes
+                    ? Math.min(
+                        99.9,
+                        (estimateDownloadedBytes(
+                          receivedBytes,
+                          encryptedLength,
+                        ) /
+                          totalBytes) *
+                          100,
+                      )
+                    : 0;
+                  showToast(
+                    t('runtime.downloadInterruptedRetrying', { attempt }),
+                    { persist: true, progress },
+                  );
+                },
+                {
+                  initialState: cachedBytes
+                    ? {
+                        bytes: cachedBytes,
+                        receivedBytes: cachedBytes.byteLength,
+                        expectedBytes: expectedCiphertextBytes,
+                      }
+                    : undefined,
+                  onCheckpoint: checkpoint?.checkpoint,
+                  onIv: checkpoint?.writeIv,
+                  onReset: checkpoint?.reset,
+                },
+              ));
             }
-            const iv = response.headers.get('X-Chunk-IV');
-            if (!iv) throw new Error(t('runtime.encryptedChunkIvMissing'));
-            const ciphertext = new Uint8Array(await response.arrayBuffer());
-            const plaintext = await chunkCrypto.decrypt(iv, ciphertext);
+
+            let plaintext;
+            try {
+              plaintext = await chunkCrypto.decrypt(iv, ciphertext);
+            } catch (error) {
+              await chunkCache?.remove(encryptedFile.id, chunkIndex);
+              throw error;
+            }
             const plaintextLength = plaintext.byteLength;
             await fileOutput.write(plaintext);
             downloadedBytes += plaintextLength;
-            const percent =
-              totalBytes === 0
-                ? 100
-                : Math.min(
-                    100,
-                    Math.round((downloadedBytes / totalBytes) * 100),
-                  );
-            showToast(
-              writesZip
-                ? t('runtime.downloadingZipProgress', { percent })
-                : t('runtime.downloadingFileProgress', {
-                    current: fileIndex + 1,
-                    total: payload.files.length,
-                    percent,
-                  }),
-              { persist: true },
-            );
+            renderProgress(downloadedBytes, fileIndex, writesZip, true, true);
           }
           await fileOutput.close();
         }
         await sink.close();
+        await chunkCache?.removeAll();
       } catch (error) {
         await sink.abort();
         throw error;
@@ -455,11 +863,13 @@ export function createDownloadManager({
           );
           showToast(t('runtime.downloadingProgress', { percent }), {
             persist: true,
+            progress: percent,
           });
         } else {
           const mb = (event.loaded / (1024 * 1024)).toFixed(1);
           showToast(t('runtime.downloadingMegabytes', { mb }), {
             persist: true,
+            progress: null,
           });
         }
       },
@@ -542,6 +952,10 @@ export function createDownloadManager({
   }
 
   async function downloadFiles(code, options = {}) {
+    showToast(t('runtime.downloadingProgress', { percent: 0 }), {
+      persist: true,
+      progress: 0,
+    });
     const key = await keyFromCode(code);
     const lookupKey = await lookupKeyFromCode(code);
     let chunkCrypto;

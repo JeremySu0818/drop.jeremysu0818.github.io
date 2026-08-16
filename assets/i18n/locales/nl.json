@@ -118,6 +118,7 @@
       "downloadCancelled": "Download geannuleerd. De serverkopie is niet verwijderd; gebruik dezelfde link om opnieuw te proberen.",
       "downloadServerRequired": "Een URL voor de downloadserver is vereist.",
       "networkDownloadError": "Netwerkfout tijdens het downloaden.",
+      "downloadInterruptedRetrying": "Verbinding onderbroken. Nieuwe poging over 3 seconden… (poging {attempt})",
       "largeDownloadUnsupported": "Deze browser kan grote downloads niet naar lokale opslag streamen. Gebruik een recente versie van Chromium, Safari of Firefox.",
       "zipEntryClosed": "De ZIP-vermelding is al gesloten.",
       "folderNotWritable": "Er kan niet naar de gekozen map worden geschreven.",

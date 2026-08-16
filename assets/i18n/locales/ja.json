@@ -318,6 +318,7 @@
       "downloadCancelled": "ダウンロードを中止しました。サーバーコピーは削除されていないため、同じリンクで再試行できます。",
       "downloadServerRequired": "ダウンロードサーバー URL が必要です。",
       "networkDownloadError": "ダウンロード中にネットワークエラーが発生しました。",
+      "downloadInterruptedRetrying": "接続が中断されました。3 秒後に再試行します…（{attempt} 回目）",
       "largeDownloadUnsupported": "このブラウザは大きなダウンロードをローカルストレージへストリーミングできません。最新版の Chromium、Safari、Firefox を使用してください。",
       "zipEntryClosed": "ZIP エントリーはすでに閉じています。",
       "folderNotWritable": "選択したフォルダーには書き込めません。",

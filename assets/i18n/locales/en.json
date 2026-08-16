@@ -333,6 +333,7 @@
       "downloadCancelled": "Download cancelled. The server copy was not deleted; use the same link to retry.",
       "downloadServerRequired": "A download server URL is required.",
       "networkDownloadError": "Network error while downloading.",
+      "downloadInterruptedRetrying": "Connection interrupted. Retrying in 3 seconds… (attempt {attempt})",
       "largeDownloadUnsupported": "This browser cannot stream large downloads to local storage. Use a current Chromium, Safari, or Firefox version.",
       "zipEntryClosed": "ZIP entry is already closed.",
       "folderNotWritable": "The selected folder is not writable.",

@@ -318,6 +318,7 @@
       "downloadCancelled": "下載已取消。伺服器副本未刪除，請使用相同連結重試。",
       "downloadServerRequired": "需要下載伺服器 URL。",
       "networkDownloadError": "下載時發生網路錯誤。",
+      "downloadInterruptedRetrying": "連線中斷，3 秒後重試…（第 {attempt} 次嘗試）",
       "largeDownloadUnsupported": "此瀏覽器無法將大型下載串流到本機儲存空間。請使用新版 Chromium、Safari 或 Firefox。",
       "zipEntryClosed": "ZIP 項目已關閉。",
       "folderNotWritable": "所選資料夾不可寫入。",
