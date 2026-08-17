@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://drop.jeremytw.qzz.io/sitemap.xml

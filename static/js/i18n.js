@@ -27,6 +27,28 @@ const SUPPORTED_CODES = new Set(SUPPORTED_LOCALES.map(({ code }) => code));
 const textSource = new WeakMap();
 const attributeSource = new WeakMap();
 const translatableAttributes = ['aria-label', 'alt', 'placeholder', 'title'];
+const OPEN_GRAPH_LOCALES = {
+  ar: 'ar_AR',
+  cs: 'cs_CZ',
+  de: 'de_DE',
+  en: 'en_US',
+  es: 'es_ES',
+  fr: 'fr_FR',
+  hi: 'hi_IN',
+  hu: 'hu_HU',
+  id: 'id_ID',
+  it: 'it_IT',
+  ja: 'ja_JP',
+  ko: 'ko_KR',
+  nl: 'nl_NL',
+  pl: 'pl_PL',
+  'pt-br': 'pt_BR',
+  ru: 'ru_RU',
+  tr: 'tr_TR',
+  vi: 'vi_VN',
+  'zh-cn': 'zh_CN',
+  'zh-tw': 'zh_TW',
+};
 
 let baseMessages = {};
 let messages = {};
@@ -198,6 +220,30 @@ function translateAttributes() {
   });
 }
 
+function translateMetadata(locale) {
+  const title = document.querySelector('title[data-i18n-key]');
+  if (title) {
+    const translatedTitle = t(title.dataset.i18nKey);
+    title.textContent = title.hasAttribute('data-append-brand')
+      ? `${translatedTitle} | ${t('common.brand')}`
+      : translatedTitle;
+  }
+
+  document.querySelectorAll('meta[data-i18n-content]').forEach((element) => {
+    const translatedContent = t(element.dataset.i18nContent);
+    element.setAttribute(
+      'content',
+      element.hasAttribute('data-append-brand')
+        ? `${translatedContent} | ${t('common.brand')}`
+        : translatedContent,
+    );
+  });
+
+  document
+    .querySelector('meta[property="og:locale"]')
+    ?.setAttribute('content', OPEN_GRAPH_LOCALES[locale] || 'en_US');
+}
+
 function updateDocumentLanguage(locale, localeData) {
   const localeInfo = SUPPORTED_LOCALES.find(({ code }) => code === locale);
   document.documentElement.lang = locale;
@@ -210,6 +256,7 @@ function applyTranslations(locale, localeData) {
   updateDocumentLanguage(locale, localeData);
   translateTextNodes();
   translateAttributes();
+  translateMetadata(locale);
 }
 
 function createLanguageSwitcher() {

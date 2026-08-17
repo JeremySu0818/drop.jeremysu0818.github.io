@@ -1,0 +1,19 @@
+{
+  "name": "Drop — Secure Encrypted File Sharing",
+  "short_name": "Drop",
+  "description": "Secure, zero-knowledge file sharing with local browser encryption.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#070b16",
+  "theme_color": "#070b16",
+  "icons": [
+    {
+      "src": "/static/images/logo.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
