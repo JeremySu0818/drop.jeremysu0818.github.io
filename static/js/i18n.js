@@ -310,10 +310,12 @@ async function loadLocale(locale) {
     const source = normalizeText(value);
     if (!sourceToKey.has(source)) sourceToKey.set(source, key);
   });
-  Object.entries(flattenMessages(localeData.messages)).forEach(([key, value]) => {
-    const source = normalizeText(value);
-    if (!sourceToKey.has(source)) sourceToKey.set(source, key);
-  });
+  Object.entries(flattenMessages(localeData.messages)).forEach(
+    ([key, value]) => {
+      const source = normalizeText(value);
+      if (!sourceToKey.has(source)) sourceToKey.set(source, key);
+    },
+  );
   return localeData;
 }
 
@@ -343,8 +345,6 @@ export async function initI18n() {
   try {
     return await setLocale(detectLocale());
   } catch {
-    // Keep the original English HTML and, more importantly, keep the app usable
-    // if a locale file is unavailable while the visitor is offline.
     activeLocale = 'en';
     document.documentElement.lang = 'en';
     document.documentElement.dir = 'ltr';

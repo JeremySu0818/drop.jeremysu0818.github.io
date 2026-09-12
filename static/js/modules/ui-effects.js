@@ -152,8 +152,6 @@ export function prepareInitialBackground() {
         highestSaturationColor = `#${toHex(bestR)}${toHex(bestG)}${toHex(bestB)}`;
       } catch (e) {}
 
-      // Apply the fully loaded image, its final position, and its sampled color
-      // together so the visitor never sees intermediate background states.
       document.documentElement.style.setProperty(
         '--page-background',
         `url("${background}")`,

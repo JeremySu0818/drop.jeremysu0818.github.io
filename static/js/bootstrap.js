@@ -12,7 +12,6 @@ const entry = new URL(import.meta.url).searchParams.get('entry');
 try {
   await Promise.all([initI18n(), prepareInitialBackground()]);
 } finally {
-  // Reveal the page only after its locale and final background are ready.
   document.documentElement.classList.remove('i18n-loading');
 }
 

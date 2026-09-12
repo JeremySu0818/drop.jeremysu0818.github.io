@@ -43,6 +43,7 @@ const els = {
   photoInput: document.querySelector('#photoInput'),
   dropZone: document.querySelector('#dropZone'),
   fileMeta: document.querySelector('#fileMeta'),
+  neverExpiresInput: document.querySelector('#neverExpiresInput'),
   uploadButton: document.querySelector('#uploadButton'),
   codeModal: document.querySelector('#codeModal'),
   shareCode: document.querySelector('#shareCode'),
@@ -170,7 +171,7 @@ function acknowledgeRecentUpload() {
     const recentUpload = JSON.parse(storedUpload);
     if (
       recentUpload.code !== els.shareCode.value ||
-      recentUpload.expiresAt <= Date.now()
+      recentUpload.expiresAt !== 0 && recentUpload.expiresAt <= Date.now()
     ) {
       return;
     }
@@ -205,7 +206,7 @@ function restoreSessionState() {
       typeof recentUpload.code !== 'string' ||
       typeof recentUpload.shortToken !== 'string' ||
       !Number.isFinite(recentUpload.expiresAt) ||
-      recentUpload.expiresAt <= Date.now()
+      (recentUpload.expiresAt !== 0 && recentUpload.expiresAt <= Date.now())
     ) {
       writeLocalValue(RECENT_UPLOAD_STORAGE_KEY, '');
       return;
@@ -353,7 +354,7 @@ async function verifyFileReadable(file) {
   }
 }
 
-async function reserveUploadSession(files) {
+async function reserveUploadSession(files, neverExpires) {
   while (true) {
     const shortToken = createShortToken();
     const code = await shortTokenToShareCode(shortToken);
@@ -371,7 +372,7 @@ async function reserveUploadSession(files) {
       );
       const session = await api('/api/chunked-uploads', {
         method: 'POST',
-        body: JSON.stringify({ lookupKey, files: manifestFiles }),
+        body: JSON.stringify({ lookupKey, files: manifestFiles, neverExpires }),
       });
       return { code, session, shortToken, uploadCrypto };
     } catch (error) {
@@ -433,7 +434,10 @@ async function uploadPhoto() {
     showToast(t('runtime.checkingFileAccess'), { persist: true });
     await Promise.all(filesToUpload.map(verifyFileReadable));
     showToast(t('runtime.preparingShareLink'), { persist: true });
-    const reserved = await reserveUploadSession(filesToUpload);
+    const reserved = await reserveUploadSession(
+      filesToUpload,
+      els.neverExpiresInput.checked,
+    );
     const { code, session, shortToken } = reserved;
     chunkCrypto = reserved.uploadCrypto;
     uploadId = session.uploadId;
@@ -536,7 +540,7 @@ async function uploadPhoto() {
     showToast(
       t('runtime.uploadSucceeded', {
         count: filesToUpload.length,
-        minutes: TTL_MINUTES,
+        minutes: els.neverExpiresInput.checked ? '∞' : TTL_MINUTES,
       }),
     );
   } catch (error) {

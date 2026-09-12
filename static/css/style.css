@@ -324,6 +324,24 @@ svg {
   color: var(--muted);
 }
 
+.expiry-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 4px 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.expiry-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
 .primary-action,
 .secondary-action,
 .icon-button {
