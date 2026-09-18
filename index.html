@@ -184,9 +184,9 @@
             </span>
             <div>
               <h2>Encrypt & Upload Any File</h2>
-              <p>
-                Code expires in 30 minutes and is destroyed immediately after
-                the first download.
+              <p id="uploadExpiryDescription">
+                Code expires according to the selected option and is destroyed
+                immediately after the first download.
               </p>
             </div>
           </div>
@@ -201,7 +201,9 @@
 
           <label class="expiry-option" for="neverExpiresInput">
             <input id="neverExpiresInput" type="checkbox" />
-            <span>Keep available until downloaded (no expiry)</span>
+            <span id="neverExpiresLabel"
+              >Keep available until downloaded (no expiry)</span
+            >
           </label>
 
           <button class="primary-action" id="uploadButton" type="button">

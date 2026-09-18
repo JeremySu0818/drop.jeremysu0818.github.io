@@ -37,13 +37,16 @@ const CHUNK_SIZE_BYTES = 64 * 1024 * 1024;
 const MAX_PARALLEL_CHUNKS = 3;
 const RECENT_UPLOAD_STORAGE_KEY = 'drop:recent-upload';
 const DOWNLOAD_CODE_STORAGE_KEY = 'drop:download-code';
+const NEVER_EXPIRES_STORAGE_KEY = 'drop:never-expires';
 const SERVER_URL = 'https://drop-server.jeremytw.qzz.io';
 
 const els = {
   photoInput: document.querySelector('#photoInput'),
   dropZone: document.querySelector('#dropZone'),
   fileMeta: document.querySelector('#fileMeta'),
+  uploadExpiryDescription: document.querySelector('#uploadExpiryDescription'),
   neverExpiresInput: document.querySelector('#neverExpiresInput'),
+  neverExpiresLabel: document.querySelector('#neverExpiresLabel'),
   uploadButton: document.querySelector('#uploadButton'),
   codeModal: document.querySelector('#codeModal'),
   shareCode: document.querySelector('#shareCode'),
@@ -70,6 +73,19 @@ let activeUploadId = '';
 
 function showToast(message, options = {}) {
   toast.show(message, options);
+}
+
+function updateUploadExpiryDescription() {
+  if (els.uploadExpiryDescription) {
+    els.uploadExpiryDescription.textContent = t(
+      els.neverExpiresInput.checked
+        ? 'runtime.uploadExpiryDescriptionUnlimited'
+        : 'runtime.uploadExpiryDescriptionTimed',
+    );
+  }
+  if (els.neverExpiresLabel) {
+    els.neverExpiresLabel.textContent = t('runtime.neverExpiresOption');
+  }
 }
 
 const downloadManager = createDownloadManager({
@@ -538,10 +554,14 @@ async function uploadPhoto() {
 
     openCodeModal();
     showToast(
-      t('runtime.uploadSucceeded', {
-        count: filesToUpload.length,
-        minutes: els.neverExpiresInput.checked ? '∞' : TTL_MINUTES,
-      }),
+      els.neverExpiresInput.checked
+        ? t('runtime.uploadSucceededUnlimited', {
+            count: filesToUpload.length,
+          })
+        : t('runtime.uploadSucceeded', {
+            count: filesToUpload.length,
+            minutes: TTL_MINUTES,
+          }),
     );
   } catch (error) {
     showToast(error.message);
@@ -613,9 +633,20 @@ function bindDropZone() {
 function init() {
   initPageEffects(createLiquidGlass);
   bindDropZone();
+  els.neverExpiresInput.checked =
+    readLocalValue(NEVER_EXPIRES_STORAGE_KEY) === 'true';
+  updateUploadExpiryDescription();
   downloadManager.cleanupStaleDownloadFiles();
   restoreSessionState();
 
+  els.neverExpiresInput.addEventListener('change', () => {
+    writeLocalValue(
+      NEVER_EXPIRES_STORAGE_KEY,
+      String(els.neverExpiresInput.checked),
+    );
+    updateUploadExpiryDescription();
+  });
+  window.addEventListener('i18n:changed', updateUploadExpiryDescription);
   els.uploadButton.addEventListener('click', uploadPhoto);
   els.downloadButton.addEventListener('click', () => downloadPhoto());
   els.downloadZipButton.addEventListener('click', () =>
